@@ -1,5 +1,19 @@
 import { useState } from 'react'
-import { apiPost, setAuth } from '../../auth/auth'
+import { setAuth } from '../../auth/auth'
+
+const ACCOUNTS_KEY = 'lms_accounts_v1'
+
+function loadAccounts() {
+  try {
+    return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{}')
+  } catch {
+    return {}
+  }
+}
+
+function makeFakeToken() {
+  return `ui_token_${Math.random().toString(16).slice(2)}`
+}
 
 export default function SignIn() {
   const [username, setUsername] = useState('')
@@ -16,20 +30,25 @@ export default function SignIn() {
       return
     }
 
-    setLoading(true)
-    try {
-      const data = await apiPost('/signin', { username, password })
-      // expected: { token, role }
-      setAuth({ token: data?.token, role: data?.role })
-    } catch (err) {
-      setError(err?.message || 'Sign in failed')
-      setLoading(false)
+    //  username and password must be the same.
+    if (username !== password) {
+      setError('Validation: username must be the same as password.')
       return
     }
 
-    const role = data?.role
-    // Prefer React Router, but if App hasn't mounted yet, fallback to location.
-    if (role === 'student') window.location.href = '/student/explore'
+    const accounts = loadAccounts()
+    const account = accounts[username]
+
+    if (!account || account.password !== password) {
+      setError('Invalid username or password.')
+      return
+    }
+
+    setLoading(true)
+    setAuth({ token: makeFakeToken(), role: account.role })
+    setLoading(false)
+
+    if (account.role === 'student') window.location.href = '/student/explore'
     else window.location.href = '/tutor/courses'
   }
 

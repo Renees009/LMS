@@ -1,23 +1,12 @@
-# LMS Auth JWT Feature - Implementation Checklist
+# LMS UI-only Auth - Implementation Checklist
 
-## Frontend
-- [ ] Add React Router setup in `client/src/App.jsx`
-- [ ] Implement `client/src/components/authentication/sign_up.jsx` (student/tutor choice + fields)
-- [ ] Implement `client/src/components/authentication/sign_in.jsx` (username/password)
-- [ ] Add auth API helper (JWT login/signup + role storage)
-- [ ] Add minimal placeholder pages:
-  - [ ] `client/src/components/student/explore_course.jsx`
-  - [ ] `client/src/components/tutor/tutor_course.jsx`
+## Auth (client only)
+- [x] Read existing auth components
+- [x] Update `client/src/components/authentication/sign_up.jsx` to remove backend calls and validate username==password
+- [x] Update `client/src/components/authentication/sign_in.jsx` to remove backend calls and validate username==password
+- [x] Implement localStorage account storage for sign-up/sign-in
+- [x] Verify redirects and role-based route protection
 
-## Backend
-- [ ] Add JWT auth endpoints to Django:
-  - [ ] models for student/tutor role
-  - [ ] signup + signin endpoints
-- [ ] Wire endpoints in `Server/backend/urls.py`
-
-## Testing
-- [ ] Install missing frontend deps (react-router-dom)
-- [ ] Run Django + Vite and verify:
-  - [ ] signup student -> signin -> redirect to explore
-  - [ ] signup tutor -> signin -> redirect to tutor courses
+## Placeholder pages
+- [ ] Keep `ExploreCourse` and `TutorCourse` UI-only (no backend)
 

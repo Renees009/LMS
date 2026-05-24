@@ -1,5 +1,24 @@
 import { useState } from 'react'
-import { apiPost, setAuth } from '../../auth/auth'
+import { setAuth } from '../../auth/auth'
+
+const ACCOUNTS_KEY = 'lms_accounts_v1'
+
+function loadAccounts() {
+  try {
+    return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{}')
+  } catch {
+    return {}
+  }
+}
+
+function saveAccounts(next) {
+  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(next))
+}
+
+function makeFakeToken() {
+  
+  return `ui_token_${Math.random().toString(16).slice(2)}`
+}
 
 export default function SignUp() {
   const [accountType, setAccountType] = useState('student')
@@ -26,7 +45,11 @@ export default function SignUp() {
       return
     }
 
-    // Basic validation per role
+    if (username !== password) {
+      setError('Validation: username must be the same as password.')
+      return
+    }
+
     if (accountType === 'student' && !fullName) {
       setError('Student full name is required.')
       return
@@ -36,30 +59,28 @@ export default function SignUp() {
       return
     }
 
-    const payload = {
-      accountType,
-      username,
-      password,
+    const accounts = loadAccounts()
+    if (accounts[username]) {
+      setError('An account with this username already exists.')
+      return
     }
 
-    if (accountType === 'student') {
-      payload.full_name = fullName
-      payload.student_id = studentId
-    } else {
-      payload.tutor_name = tutorName
-      payload.specialization = specialization
+    const profile = { fullName, studentId, tutorName, specialization }
+
+    accounts[username] = {
+      username,
+      password, 
+      role: accountType,
+      ...profile,
+      createdAt: Date.now(),
     }
 
     setLoading(true)
-    try {
-      const data = await apiPost('/signup', payload)
-      // expected: { token, role }
-      setAuth({ token: data?.token, role: data?.role || accountType })
-    } catch (err) {
-      setError(err?.message || 'Sign up failed')
-      setLoading(false)
-      return
-    }
+    saveAccounts(accounts)
+
+    
+    setAuth({ token: makeFakeToken(), role: accountType })
+    setLoading(false)
 
     if (accountType === 'student') window.location.href = '/student/explore'
     else window.location.href = '/tutor/courses'
