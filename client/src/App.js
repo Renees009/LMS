@@ -22,4 +22,5 @@ function App() {
   );
 }
 
-export default App;
+// Kept for compatibility if something imports App.js
+export { default } from './App.jsx';
