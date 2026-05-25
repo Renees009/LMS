@@ -46,7 +46,7 @@ export default function SignUp() {
     }
 
     if (username !== password) {
-      setError('Validation: username must be the same as password.')
+      setError('Username or Password is incorrect')
       return
     }
 
