@@ -11,7 +11,10 @@ import CompletedCourse from "./components/student/completed_course";
 import Settings from "./components/student/student_settings";
 
 import TutorCourse from "./components/tutor/tutor_course";
-
+import AddCourse from "./components/tutor/add_course";
+import TutorProfile from "./components/tutor/tutor_profile";
+import TutorSettings from "./components/tutor/tutor_settings";
+import TutorLayout from "./components/tutor/tutor_layout";
 
 import { getRole, getToken } from "./auth/auth";
 
@@ -23,7 +26,7 @@ function RequireAuth({ children, role }) {
   if (role && userRole !== role)
     return (
       <Navigate
-        to={userRole === "tutor" ? "/tutor/courses" : "/student"}
+        to={userRole === "tutor" ? "/tutor" : "/student"}
         replace
       />
     );
@@ -57,14 +60,20 @@ export default function App() {
         </Route>
 
         <Route
-          path="/tutor/courses"
+          path="/tutor"
           element={
             <RequireAuth role="tutor">
-              <TutorCourse />
+              <TutorLayout />
             </RequireAuth>
           }
-        />
-
+        >
+          <Route index element={<TutorCourse />} />
+          <Route path="courses" element={<TutorCourse />} />
+          <Route path="add-course" element={<AddCourse />} />
+          <Route path="profile" element={<TutorProfile />} />
+          <Route path="settings" element={<TutorSettings />} />
+        </Route>
+          
         <Route path="/" element={<Navigate to="/signin" replace />} />
       </Routes>
     </BrowserRouter>

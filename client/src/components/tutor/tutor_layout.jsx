@@ -1,39 +1,37 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
-  FaUserGraduate,
-  FaBookOpen,
-  FaClipboardList,
-  FaCheckCircle,
+  FaBook,
+  FaPlusCircle,
+  FaEdit,
+  FaUserTie,
   FaCog,
 } from "react-icons/fa";
 
-export default function StudentLayout() {
+export default function TutorLayout() {
   const location = useLocation();
 
   const menu = [
+
     {
-      name: "Student Profile",
-      path: "/student/profile",
-      icon: <FaUserGraduate />,
+      name: "Tutor Profile",
+      path: "/tutor/profile",
+      icon: <FaUserTie />,
+    },
+    
+    {
+      name: "My Courses",
+      path: "/tutor/courses",
+      icon: <FaBook />,
     },
     {
-      name: "Explore Course",
-      path: "/student/explore",
-      icon: <FaBookOpen />,
+      name: "Add Course",
+      path: "/tutor/add-course",
+      icon: <FaPlusCircle />,
     },
-    {
-      name: "Enrolled Course",
-      path: "/student/enrolled",
-      icon: <FaClipboardList />,
-    },
-    {
-      name: "Completed Course",
-      path: "/student/completed",
-      icon: <FaCheckCircle />,
-    },
+    
     {
       name: "Settings",
-      path: "/student/settings",
+      path: "/tutor/settings",
       icon: <FaCog />,
     },
   ];
@@ -41,7 +39,7 @@ export default function StudentLayout() {
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       
-      {/* Sidebar */}
+
       <div
         style={{
           width: "250px",
@@ -54,7 +52,7 @@ export default function StudentLayout() {
           top: 0,
         }}
       >
-        <h2>Flow Student Hub</h2>
+        <h2>Flow Tutor Hub</h2>
 
         {menu.map((item) => (
           <Link
@@ -62,6 +60,7 @@ export default function StudentLayout() {
             to={item.path}
             style={{
               display: "flex",
+              alignItems: "center",
               gap: "10px",
               padding: "12px",
               marginTop: "10px",
@@ -77,11 +76,9 @@ export default function StudentLayout() {
             {item.icon}
             {item.name}
           </Link>
-          
         ))}
       </div>
 
-      
       <div
         style={{
           marginLeft: "270px",
