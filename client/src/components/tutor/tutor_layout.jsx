@@ -2,7 +2,6 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import {
   FaBook,
   FaPlusCircle,
-  FaEdit,
   FaUserTie,
   FaCog,
 } from "react-icons/fa";
@@ -11,13 +10,11 @@ export default function TutorLayout() {
   const location = useLocation();
 
   const menu = [
-
     {
       name: "Tutor Profile",
       path: "/tutor/profile",
       icon: <FaUserTie />,
     },
-    
     {
       name: "My Courses",
       path: "/tutor/courses",
@@ -28,7 +25,6 @@ export default function TutorLayout() {
       path: "/tutor/add-course",
       icon: <FaPlusCircle />,
     },
-    
     {
       name: "Settings",
       path: "/tutor/settings",
@@ -38,8 +34,7 @@ export default function TutorLayout() {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
-      
-
+        
       <div
         style={{
           width: "250px",
@@ -52,7 +47,17 @@ export default function TutorLayout() {
           top: 0,
         }}
       >
-        <h2>Flow Tutor Hub</h2>
+        <h2
+          style={{
+            color: "white",
+            textAlign: "center",
+            marginBottom: "30px",
+            fontSize: "32px",
+            fontWeight: "bold",
+          }}
+        >
+          Flow Tutor Hub
+        </h2>
 
         {menu.map((item) => (
           <Link
@@ -61,12 +66,13 @@ export default function TutorLayout() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "10px",
-              padding: "12px",
+              gap: "12px",
+              padding: "15px",
               marginTop: "10px",
               textDecoration: "none",
               color: "white",
               borderRadius: "8px",
+              fontSize: "18px",
               background:
                 location.pathname === item.path
                   ? "#334155"
@@ -81,8 +87,8 @@ export default function TutorLayout() {
 
       <div
         style={{
-          marginLeft: "270px",
-          padding: "20px",
+          marginLeft: "250px",
+          
           width: "100%",
         }}
       >
