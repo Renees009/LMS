@@ -1,99 +1,88 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Layout, Menu, Typography } from "antd";
 import {
-  FaBook,
-  FaPlusCircle,
-  FaUserTie,
-  FaCog,
-} from "react-icons/fa";
+  UserOutlined,
+  BookOutlined,
+  PlusCircleOutlined,
+  SettingOutlined,
+} from "@ant-design/icons";
+
+const { Sider, Content } = Layout;
+const { Title } = Typography;
 
 export default function TutorLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const menu = [
+  const menuItems = [
     {
-      name: "Tutor Profile",
-      path: "/tutor/profile",
-      icon: <FaUserTie />,
+      key: "/tutor/profile",
+      icon: <UserOutlined />,
+      label: "Tutor Profile",
     },
     {
-      name: "My Courses",
-      path: "/tutor/courses",
-      icon: <FaBook />,
+      key: "/tutor/courses",
+      icon: <BookOutlined />,
+      label: "My Courses",
     },
     {
-      name: "Add Course",
-      path: "/tutor/add-course",
-      icon: <FaPlusCircle />,
+      key: "/tutor/add-course",
+      icon: <PlusCircleOutlined />,
+      label: "Add Course",
     },
     {
-      name: "Settings",
-      path: "/tutor/settings",
-      icon: <FaCog />,
+      key: "/tutor/settings",
+      icon: <SettingOutlined />,
+      label: "Settings",
     },
   ];
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
-        
-      <div
+    <Layout style={{ minHeight: "100vh" }}>
+      <Sider
+        width={250}
+        theme="dark"
         style={{
-          width: "250px",
-          backgroundColor: "#1e293b",
-          color: "white",
-          padding: "20px",
           position: "fixed",
-          height: "100%",
           left: 0,
           top: 0,
+          bottom: 0,
         }}
       >
-        <h2
-          style={{
-            color: "white",
-            textAlign: "center",
-            marginBottom: "30px",
-            fontSize: "32px",
-            fontWeight: "bold",
-          }}
-        >
-          Flow Tutor Hub
-        </h2>
-
-        {menu.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
+        <div style={{ padding: "20px" }}>
+          <Title
+            level={3}
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              padding: "15px",
-              marginTop: "10px",
-              textDecoration: "none",
               color: "white",
-              borderRadius: "8px",
-              fontSize: "18px",
-              background:
-                location.pathname === item.path
-                  ? "#334155"
-                  : "transparent",
+              textAlign: "center",
+              margin: 0,
             }}
           >
-            {item.icon}
-            {item.name}
-          </Link>
-        ))}
-      </div>
+            Flow Tutor Hub
+          </Title>
+        </div>
 
-      <div
-        style={{
-          marginLeft: "250px",
-          
-          width: "100%",
-        }}
-      >
-        <Outlet />
-      </div>
-    </div>
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={[location.pathname]}
+          items={menuItems}
+          onClick={({ key }) => navigate(key)}
+          style={{ fontSize: "16px" }}
+        />
+      </Sider>
+
+      <Layout style={{ marginLeft: 240 }}>
+        <Content
+          style={{
+            backgroundColor: "white",
+            minHeight: "100vh",
+            
+          }}
+        >
+          <Outlet />
+        </Content>
+      </Layout>
+    </Layout>
   );
 }

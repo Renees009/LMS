@@ -1,7 +1,15 @@
 export default function StudentProfile() {
   return (
-    <div>
-      <h2>Student Profile</h2>    
+    <div
+      style={{
+        backgroundColor: "white",
+        minHeight: "100vh",
+        padding: "20px",
+      }}
+    >
+      <h2 style={{ color: "black" }}>
+        Student Profile
+      </h2>
     </div>
   );
 }

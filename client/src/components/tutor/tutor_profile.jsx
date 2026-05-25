@@ -1,172 +1,129 @@
 import { useState } from "react";
+import {
+  Form,
+  Input,
+  Button,
+  Upload,
+  Avatar,
+  Typography,
+  Space,
+  message,
+  Card,
+} from "antd";
+import { UploadOutlined, UserOutlined } from "@ant-design/icons";
+
+const { Title } = Typography;
 
 export default function TutorProfile() {
   const [profileImage, setProfileImage] = useState(null);
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
+  const handleUpload = (info) => {
+    const file = info.file.originFileObj;
     if (file) {
       setProfileImage(URL.createObjectURL(file));
+      message.success("Profile image updated");
     }
   };
 
+  const onFinish = (values) => {
+    console.log(values);
+    message.success("Profile saved successfully!");
+  };
+
   return (
-    <div style={pageStyle}>
-      <h2 style={headingStyle}>Tutor Profile</h2>
+    <div
+      style={{
+        padding: "30px",
+        minHeight: "100vh",
+        backgroundColor: "#f8fafc",
+      }}
+    >
+      <Card
+        style={{
+          maxWidth: "900px",
+          margin: "0 auto",
+          borderRadius: "12px",
+        }}
+      >
+        <Title level={2} style={{ textAlign: "center", color: "#1e293b" }}>
+          Tutor Profile
+        </Title>
 
-      {/* Profile Image */}
-      <div style={imageContainer}>
-        <img
-          src={
-            profileImage ||
-            "https://via.placeholder.com/120?text=Profile"
-          }
-          alt="Profile"
-          style={imageStyle}
-        />
-
-        <label style={uploadButton}>
-          Change Photo
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            hidden
+        {/* Profile Photo */}
+        <div style={{ textAlign: "center", marginBottom: "30px" }}>
+          <Avatar
+            size={120}
+            src={profileImage}
+            icon={!profileImage && <UserOutlined />}
           />
-        </label>
-      </div>
 
-      <form style={formStyle}>
-        <div style={formRow}>
-          <label style={labelStyle}>Tutor Name</label>
-          <input
-            type="text"
-            placeholder="Enter tutor name"
-            style={inputStyle}
-          />
+          <br />
+          <Upload
+            showUploadList={false}
+            beforeUpload={() => false}
+            onChange={handleUpload}
+          >
+            <Button
+              icon={<UploadOutlined />}
+              style={{ marginTop: "15px" }}
+            >
+              Change Photo
+            </Button>
+          </Upload>
         </div>
 
-        <div style={formRow}>
-          <label style={labelStyle}>Specialization</label>
-          <input
-            type="text"
-            placeholder="Enter specialization"
-            style={inputStyle}
-          />
-        </div>
+        {/* Form */}
+        <Form
+          layout="horizontal"
+          labelCol={{ span: 6 }}
+          wrapperCol={{ span: 14 }}
+          onFinish={onFinish}
+        >
+          <Form.Item
+            label="Tutor Name"
+            name="name"
+            rules={[{ required: true, message: "Enter tutor name" }]}
+          >
+            <Input placeholder="Enter tutor name" />
+          </Form.Item>
 
-        <div style={formRow}>
-          <label style={labelStyle}>Contact Number</label>
-          <input
-            type="tel"
-            placeholder="Enter contact number"
-            style={inputStyle}
-          />
-        </div>
+          <Form.Item
+            label="Specialization"
+            name="specialization"
+            rules={[{ required: true, message: "Enter specialization" }]}
+          >
+            <Input placeholder="Enter specialization" />
+          </Form.Item>
 
-        <div style={formRow}>
-          <label style={labelStyle}>Gmail</label>
-          <input
-            type="email"
-            placeholder="Enter email"
-            style={inputStyle}
-          />
-        </div>
+          <Form.Item
+            label="Contact Number"
+            name="phone"
+            rules={[{ required: true, message: "Enter contact number" }]}
+          >
+            <Input placeholder="Enter contact number" />
+          </Form.Item>
 
-        <div style={buttonContainer}>
-          <button type="submit" style={buttonStyle}>
-            Save
-          </button>
-          <button type="button" style={buttonStyle}>
-            Update
-          </button>
-        </div>
-      </form>
+          <Form.Item
+            label="Gmail"
+            name="email"
+            rules={[
+              { required: true, message: "Enter email" },
+              { type: "email", message: "Enter valid email" },
+            ]}
+          >
+            <Input placeholder="Enter email" />
+          </Form.Item>
+
+          <Form.Item wrapperCol={{ offset: 8 }}>
+            <Space>
+              <Button type="primary" htmlType="submit">
+                Save
+              </Button>
+              <Button>Update</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Card>
     </div>
   );
 }
-
-const pageStyle = {
-  width: "100%",
-  minHeight: "100vh",
-  padding: "30px 50px",
-  backgroundColor: "#f8fafc",
-  boxSizing: "border-box",
-};
-
-const headingStyle = {
-  textAlign: "center",
-  color: "#1e293b",
-  marginBottom: "30px",
-};
-
-const imageContainer = {
-  textAlign: "center",
-  marginBottom: "40px",
-};
-
-const imageStyle = {
-  width: "120px",
-  height: "120px",
-  borderRadius: "50%",
-  objectFit: "cover",
-  border: "3px solid #1e293b",
-};
-
-const uploadButton = {
-  display: "block",
-  width: "150px",
-  margin: "15px auto",
-  padding: "10px",
-  backgroundColor: "#1e293b",
-  color: "white",
-  textAlign: "center",
-  borderRadius: "8px",
-  cursor: "pointer",
-};
-
-const formStyle = {
-  maxWidth: "900px",
-  margin: "0 auto",
-};
-
-const formRow = {
-  display: "flex",
-  alignItems: "center",
-  marginBottom: "25px",
-};
-
-const labelStyle = {
-  width: "220px",
-  fontWeight: "600",
-  color: "#1e293b",
-  fontSize: "18px",
-};
-
-const inputStyle = {
-  flex: 1,
-  padding: "14px",
-  border: "1px solid #cbd5e1",
-  borderRadius: "8px",
-  backgroundColor: "white",
-  color: "#1e293b",
-  fontSize: "16px",
-  outline: "none",
-};
-
-const buttonContainer = {
-  display: "flex",
-  justifyContent: "center",
-  gap: "20px",
-  marginTop: "40px",
-};
-
-const buttonStyle = {
-  backgroundColor: "#1e293b",
-  color: "white",
-  border: "none",
-  padding: "14px 30px",
-  borderRadius: "8px",
-  cursor: "pointer",
-  fontSize: "16px",
-};

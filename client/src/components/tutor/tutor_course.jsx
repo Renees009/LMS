@@ -1,7 +1,15 @@
 export default function TutorCourse() {
-   return (
-    <div>
-      <h2>Explore Courses</h2>      
+  return (
+    <div
+      style={{
+        backgroundColor: "white",
+        minHeight: "100vh",
+        padding: "20px",
+      }}
+    >
+      <h2 style={{ color: "black" }}>
+        Your Courses
+      </h2>
     </div>
   );
 }

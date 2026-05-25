@@ -1,255 +1,226 @@
 import { useState } from "react";
+import {
+  Form,
+  Input,
+  Select,
+  Upload,
+  Button,
+  Card,
+  Typography,
+  message,
+} from "antd";
+import {
+  UploadOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
+
+const { Title } = Typography;
+const { Option } = Select;
+const { TextArea } = Input;
 
 export default function AddCourse() {
-  const [thumbnail, setThumbnail] = useState(null);
   const [category, setCategory] = useState("");
+  const [thumbnail, setThumbnail] = useState(null);
+  const [form] = Form.useForm();
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
+  const handleSubmit = (values) => {
+    console.log(values);
+    message.success("Course added successfully!");
+    form.resetFields();
+    setThumbnail(null);
+  };
+
+  const thumbnailProps = {
+    beforeUpload: (file) => {
       setThumbnail(URL.createObjectURL(file));
-    }
+      return false;
+    },
+    maxCount: 1,
   };
 
   return (
-    <div style={pageStyle}>
-      <h2 style={headingStyle}>Add New Course</h2>
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#f8fafc",
+        padding: "30px",
+      }}
+    >
+      <Card
+        style={{
+          maxWidth: 900,
+          margin: "auto",
+          borderRadius: 12,
+        }}
+      >
+        <Title
+          level={2}
+          style={{ textAlign: "center" }}
+        >
+          Add New Course
+        </Title>
 
-      <form style={formStyle}>
-        {/* Thumbnail */}
-        <div style={imageContainer}>
-          <img
-            src={
-              thumbnail ||
-              "https://via.placeholder.com/180x120?text=Course+Image"
-            }
-            alt="Course"
-            style={imageStyle}
-          />
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+        >
+          {/* Thumbnail */}
+          <Form.Item label="Course Thumbnail">
+            <div style={{ textAlign: "center" }}>
+              <img
+                src={
+                  thumbnail ||
+                  "https://via.placeholder.com/180x120?text=Course+Image"
+                }
+                alt="thumbnail"
+                style={{
+                  width: 180,
+                  height: 120,
+                  borderRadius: 8,
+                  marginBottom: 15,
+                }}
+              />
 
-          <label style={uploadButton}>
-            Upload Thumbnail
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              hidden
-            />
-          </label>
-        </div>
+              <Upload {...thumbnailProps}>
+                <Button icon={<UploadOutlined />}>
+                  Upload Thumbnail
+                </Button>
+              </Upload>
+            </div>
+          </Form.Item>
 
-        <div style={formRow}>
-          <label style={labelStyle}>Course Title</label>
-          <input
-            type="text"
-            placeholder="Enter course title"
-            style={inputStyle}
-          />
-        </div>
-
-        <div style={formRow}>
-          <label style={labelStyle}>Tutor Details</label>
-          <input
-            type="text"
-            placeholder="Enter tutor details"
-            style={inputStyle}
-          />
-        </div>
-
-        <div style={formRow}>
-          <label style={labelStyle}>Course Category</label>
-          <select
-            style={inputStyle}
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
+          <Form.Item
+            label="Course Title"
+            name="title"
+            rules={[
+              { required: true, message: "Enter course title" },
+            ]}
           >
-            <option>Select Category</option>
-            <option>Programming</option>
-            <option>Web Development</option>
-            <option>UI/UX Design</option>
-            <option>Data Science</option>
-            <option>Others</option>
-          </select>
-        </div>
+            <Input placeholder="Enter course title" />
+          </Form.Item>
 
-        {category === "Others" && (
-          <div style={formRow}>
-            <label style={labelStyle}>New Category</label>
-            <input
-              type="text"
-              placeholder="Enter course category"
-              style={inputStyle}
+          <Form.Item
+            label="Tutor Details"
+            name="tutor"
+            rules={[
+              { required: true, message: "Enter tutor details" },
+            ]}
+          >
+            <Input placeholder="Enter tutor details" />
+          </Form.Item>
+
+          <Form.Item
+            label="Course Category"
+            name="category"
+            rules={[
+              { required: true, message: "Select category" },
+            ]}
+          >
+            <Select
+              placeholder="Select category"
+              onChange={(value) => setCategory(value)}
+            >
+              <Option value="Programming">Programming</Option>
+              <Option value="Web Development">
+                Web Development
+              </Option>
+              <Option value="UI/UX Design">
+                UI/UX Design
+              </Option>
+              <Option value="Data Science">
+                Data Science
+              </Option>
+              <Option value="Others">Others</Option>
+            </Select>
+          </Form.Item>
+
+          {category === "Others" && (
+            <Form.Item
+              label="New Category"
+              name="newCategory"
+              rules={[
+                {
+                  required: true,
+                  message: "Enter new category",
+                },
+              ]}
+            >
+              <Input placeholder="Enter course category" />
+            </Form.Item>
+          )}
+
+          <Form.Item
+            label="Course Duration"
+            name="duration"
+          >
+            <Input placeholder="e.g. 8 weeks" />
+          </Form.Item>
+
+          <Form.Item
+            label="Course Level"
+            name="level"
+          >
+            <Select placeholder="Select level">
+              <Option value="Beginner">Beginner</Option>
+              <Option value="Intermediate">
+                Intermediate
+              </Option>
+              <Option value="Advanced">Advanced</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Description"
+            name="description"
+          >
+            <TextArea
+              rows={4}
+              placeholder="Enter course description"
             />
-          </div>
-        )}
+          </Form.Item>
 
-        <div style={formRow}>
-          <label style={labelStyle}>Course Duration</label>
-          <input
-            type="text"
-            placeholder="e.g. 8 weeks"
-            style={inputStyle}
-          />
-        </div>
+          <Form.Item label="Upload Videos">
+            <Upload
+              multiple
+              beforeUpload={() => false}
+            >
+              <Button icon={<UploadOutlined />}>
+                Upload Videos
+              </Button>
+            </Upload>
+          </Form.Item>
 
-        <div style={formRow}>
-          <label style={labelStyle}>Course Level</label>
-          <select style={inputStyle}>
-            <option>Select Level</option>
-            <option>Beginner</option>
-            <option>Intermediate</option>
-            <option>Advanced</option>
-          </select>
-        </div>
+          <Form.Item label="Course Materials">
+            <Upload
+              multiple
+              beforeUpload={() => false}
+            >
+              <Button icon={<PlusOutlined />}>
+                Upload PDFs / PPTs
+              </Button>
+            </Upload>
+          </Form.Item>
 
-        <div style={formRow}>
-          <label style={labelStyle}>Description</label>
-          <textarea
-            rows="4"
-            placeholder="Enter course description"
-            style={textareaStyle}
-          />
-        </div>
+          <Form.Item style={{ textAlign: "center" }}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              size="large"
+            >
+              Add Course
+            </Button>
 
-        <div style={formRow}>
-          <label style={labelStyle}>Upload Videos</label>
-          <input
-            type="file"
-            accept="video/*"
-            multiple
-            style={inputStyle}
-          />
-        </div>
-
-        <div style={formRow}>
-          <label style={labelStyle}>Course Materials</label>
-          <input
-            type="file"
-            accept=".pdf,.ppt,.pptx"
-            multiple
-            style={inputStyle}
-          />
-        </div>
-
-        <div style={buttonContainer}>
-          <button type="submit" style={buttonStyle}>
-            Add Course
-          </button>
-
-          <button type="reset" style={resetButtonStyle}>
-            Reset
-          </button>
-        </div>
-      </form>
+            <Button
+              htmlType="reset"
+              size="large"
+              style={{ marginLeft: 15 }}
+            >
+              Reset
+            </Button>
+          </Form.Item>
+        </Form>
+      </Card>
     </div>
   );
 }
-
-/* styles */
-
-const pageStyle = {
-  width: "100%",
-  minHeight: "100vh",
-  padding: "30px 50px",
-  backgroundColor: "#f8fafc",
-  boxSizing: "border-box",
-};
-
-const headingStyle = {
-  textAlign: "center",
-  color: "#1e293b",
-  marginBottom: "35px",
-};
-
-const formStyle = {
-  maxWidth: "950px",
-  margin: "0 auto",
-};
-
-const imageContainer = {
-  textAlign: "center",
-  marginBottom: "40px",
-};
-
-const imageStyle = {
-  width: "180px",
-  height: "120px",
-  objectFit: "cover",
-  borderRadius: "8px",
-  border: "2px solid #1e293b",
-};
-
-const uploadButton = {
-  display: "block",
-  width: "170px",
-  margin: "15px auto",
-  padding: "10px",
-  backgroundColor: "#1e293b",
-  color: "white",
-  textAlign: "center",
-  borderRadius: "8px",
-  cursor: "pointer",
-};
-
-const formRow = {
-  display: "flex",
-  alignItems: "center",
-  marginBottom: "22px",
-};
-
-const labelStyle = {
-  width: "220px",
-  fontWeight: "600",
-  color: "#1e293b",
-  fontSize: "17px",
-};
-
-const inputStyle = {
-  flex: 1,
-  padding: "14px",
-  border: "1px solid #cbd5e1",
-  borderRadius: "8px",
-  backgroundColor: "white",
-  color: "#1e293b",
-  fontSize: "16px",
-  outline: "none",
-};
-
-const textareaStyle = {
-  flex: 1,
-  padding: "14px",
-  border: "1px solid #cbd5e1",
-  borderRadius: "8px",
-  backgroundColor: "white",
-  color: "#1e293b",
-  fontSize: "16px",
-  resize: "none",
-  outline: "none",
-};
-
-const buttonContainer = {
-  display: "flex",
-  justifyContent: "center",
-  gap: "20px",
-  marginTop: "35px",
-};
-
-const buttonStyle = {
-  backgroundColor: "#1e293b",
-  color: "white",
-  border: "none",
-  padding: "14px 30px",
-  borderRadius: "8px",
-  cursor: "pointer",
-  fontSize: "16px",
-};
-
-const resetButtonStyle = {
-  backgroundColor: "#64748b",
-  color: "white",
-  border: "none",
-  padding: "14px 30px",
-  borderRadius: "8px",
-  cursor: "pointer",
-  fontSize: "16px",
-};

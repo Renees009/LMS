@@ -1,96 +1,87 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Layout, Menu, Typography } from "antd";
 import {
-  FaUserGraduate,
-  FaBookOpen,
-  FaClipboardList,
-  FaCheckCircle,
-  FaCog,
-} from "react-icons/fa";
+  UserOutlined,
+  BookOutlined,
+  ProfileOutlined,
+  CheckCircleOutlined,
+  SettingOutlined,
+} from "@ant-design/icons";
+
+const { Sider, Content } = Layout;
+const { Title } = Typography;
 
 export default function StudentLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const menu = [
+  const menuItems = [
     {
-      name: "Student Profile",
-      path: "/student/profile",
-      icon: <FaUserGraduate />,
+      key: "/student/profile",
+      icon: <UserOutlined />,
+      label: "Student Profile",
     },
     {
-      name: "Explore Course",
-      path: "/student/explore",
-      icon: <FaBookOpen />,
+      key: "/student/explore",
+      icon: <BookOutlined />,
+      label: "Explore Course",
     },
     {
-      name: "Enrolled Course",
-      path: "/student/enrolled",
-      icon: <FaClipboardList />,
+      key: "/student/enrolled",
+      icon: <ProfileOutlined />,
+      label: "Enrolled Course",
     },
     {
-      name: "Completed Course",
-      path: "/student/completed",
-      icon: <FaCheckCircle />,
+      key: "/student/completed",
+      icon: <CheckCircleOutlined />,
+      label: "Completed Course",
     },
     {
-      name: "Settings",
-      path: "/student/settings",
-      icon: <FaCog />,
+      key: "/student/settings",
+      icon: <SettingOutlined />,
+      label: "Settings",
     },
   ];
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
-      
+    <Layout style={{ minHeight: "100vh" }}>
       {/* Sidebar */}
-      <div
+      <Sider
+        width={250}
         style={{
-          width: "250px",
-          backgroundColor: "#1e293b",
-          color: "white",
-          padding: "20px",
-          position: "fixed",
-          height: "100%",
-          left: 0,
-          top: 0,
+          background: "#1e293b",
         }}
       >
-        <h2>Flow Student Hub</h2>
+        <div style={{ padding: "20px", textAlign: "center" }}>
+          <Title level={3} style={{ color: "white", margin: 0 }}>
+            Flow Student Hub
+          </Title>
+        </div>
 
-        {menu.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            style={{
-              display: "flex",
-              gap: "10px",
-              padding: "12px",
-              marginTop: "10px",
-              textDecoration: "none",
-              color: "white",
-              borderRadius: "8px",
-              background:
-                location.pathname === item.path
-                  ? "#334155"
-                  : "transparent",
-            }}
-          >
-            {item.icon}
-            {item.name}
-          </Link>
-          
-        ))}
-      </div>
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={[location.pathname]}
+          items={menuItems}
+          onClick={({ key }) => navigate(key)}
+          style={{
+            background: "#1e293b",
+            fontSize: "16px",
+          }}
+        />
+      </Sider>
 
-      
-      <div
-        style={{
-          marginLeft: "270px",
-          padding: "20px",
-          width: "100%",
-        }}
-      >
-        <Outlet />
-      </div>
-    </div>
+      <Layout>
+        <Content
+          style={{
+        
+            background: "#f8fafc",
+            minHeight: "100vh",
+          }}
+        >
+          <Outlet />
+        </Content>
+      </Layout>
+    </Layout>
   );
 }

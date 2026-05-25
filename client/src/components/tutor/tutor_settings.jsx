@@ -1,239 +1,118 @@
 import { useState } from "react";
+import {
+  Form,
+  Input,
+  Button,
+  Switch,
+  Typography,
+  Card,
+  message,
+} from "antd";
+
+const { Title, Text } = Typography;
 
 export default function TutorSettings() {
   const [darkTheme, setDarkTheme] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [message, setMessage] = useState("");
+  const [form] = Form.useForm();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (newPassword !== confirmPassword) {
-      setMessage("Password mis match!");
+  const onFinish = (values) => {
+    if (values.newPassword !== values.confirmPassword) {
+      message.error("Password mismatch!");
       return;
     }
 
-    setMessage("Password changed successfully!");
+    message.success("Password changed successfully!");
+    form.resetFields(["newPassword", "confirmPassword"]);
   };
 
   return (
     <div
       style={{
-        ...pageStyle,
+        minHeight: "100vh",
+        padding: "40px",
         backgroundColor: darkTheme ? "#1e293b" : "#f8fafc",
+        transition: "0.3s",
       }}
     >
-      <h2
+      <Card
         style={{
-          ...headingStyle,
-          color: darkTheme ? "white" : "#1e293b",
+          maxWidth: 700,
+          margin: "auto",
+          borderRadius: 12,
         }}
       >
-        Tutor Settings
-      </h2>
+        <Title
+          level={2}
+          style={{
+            textAlign: "center",
+            color: darkTheme ? "#1e293b" : "#1e293b",
+          }}
+        >
+          Tutor Settings
+        </Title>
 
-      <form style={formStyle} onSubmit={handleSubmit}>
-        <div style={formRow}>
-          <label
-            style={{
-              ...labelStyle,
-              color: darkTheme ? "white" : "#1e293b",
-            }}
-          >
-            Old Password
-          </label>
-          <input
-            type="password"
-            defaultValue="********"
-            style={inputStyle}
-            readOnly
-          />
-        </div>
-
-        <div style={formRow}>
-          <label
-            style={{
-              ...labelStyle,
-              color: darkTheme ? "white" : "#1e293b",
-            }}
-          >
-            New Password
-          </label>
-          <input
-            type="text"
-            placeholder="Enter new password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-
-        <div style={formRow}>
-          <label
-            style={{
-              ...labelStyle,
-              color: darkTheme ? "white" : "#1e293b",
-            }}
-          >
-            Confirm Password
-          </label>
-          <input
-            type="password"
-            placeholder="Confirm new password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-
-        {message && (
-          <p
-            style={{
-              textAlign: "center",
-              color:
-                message === "Password changed successfully!"
-                  ? "green"
-                  : "red",
-              fontWeight: "bold",
-            }}
-          >
-            {message}
-          </p>
-        )}
-
-        <div style={buttonContainer}>
-          <button type="submit" style={buttonStyle}>
-            Change Password
-          </button>
-        </div>
-
-        {/* Theme Toggle */}
-        <div style={{ ...formRow, marginTop: "50px" }}>
-          <label
-            style={{
-              ...labelStyle,
-              color: darkTheme ? "white" : "#1e293b",
-            }}
-          >
-            Theme
-          </label>
-
-          <label style={toggleContainer}>
-            <input
-              type="checkbox"
-              checked={darkTheme}
-              onChange={() => setDarkTheme(!darkTheme)}
-              style={{ display: "none" }}
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={onFinish}
+        >
+          <Form.Item label="Old Password">
+            <Input.Password
+              value="********"
+              readOnly
             />
+          </Form.Item>
 
-            <div
-              style={{
-                ...toggleSwitch,
-                backgroundColor: darkTheme ? "#22c55e" : "#cbd5e1",
-              }}
+          <Form.Item
+            label="New Password"
+            name="newPassword"
+            rules={[
+              {
+                required: true,
+                message: "Please enter new password",
+              },
+            ]}
+          >
+            <Input placeholder="Enter new password" />
+          </Form.Item>
+
+          <Form.Item
+            label="Confirm Password"
+            name="confirmPassword"
+            rules={[
+              {
+                required: true,
+                message: "Please confirm password",
+              },
+            ]}
+          >
+            <Input.Password placeholder="Confirm password" />
+          </Form.Item>
+
+          <Form.Item style={{ textAlign: "center" }}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              size="large"
             >
-              <div
-                style={{
-                  ...toggleCircle,
-                  transform: darkTheme
-                    ? "translateX(30px)"
-                    : "translateX(0)",
-                }}
-              />
+              Change Password
+            </Button>
+          </Form.Item>
+
+          <Form.Item>
+            <Text strong>Theme</Text>
+            <div style={{ marginTop: 10 }}>
+              <Switch
+                checked={darkTheme}
+                onChange={setDarkTheme}
+              />{" "}
+              <span style={{ marginLeft: 10 }}>
+                {darkTheme ? "Dark Theme" : "Light Theme"}
+              </span>
             </div>
-
-            <span
-              style={{
-                marginLeft: "15px",
-                color: darkTheme ? "white" : "#1e293b",
-                fontWeight: "600",
-              }}
-            >
-              {darkTheme ? "Dark Theme" : "Light Theme"}
-            </span>
-          </label>
-        </div>
-      </form>
+          </Form.Item>
+        </Form>
+      </Card>
     </div>
   );
 }
-
-const pageStyle = {
-  width: "100%",
-  minHeight: "100vh",
-  padding: "30px 50px",
-  boxSizing: "border-box",
-  transition: "0.3s",
-};
-
-const headingStyle = {
-  textAlign: "center",
-  marginBottom: "40px",
-};
-
-const formStyle = {
-  maxWidth: "900px",
-  margin: "0 auto",
-};
-
-const formRow = {
-  display: "flex",
-  alignItems: "center",
-  marginBottom: "25px",
-};
-
-const labelStyle = {
-  width: "220px",
-  fontWeight: "600",
-  fontSize: "18px",
-};
-
-const inputStyle = {
-  flex: 1,
-  padding: "14px",
-  border: "1px solid #cbd5e1",
-  borderRadius: "8px",
-  backgroundColor: "white",
-  color: "#1e293b",
-  fontSize: "16px",
-  outline: "none",
-};
-
-const buttonContainer = {
-  display: "flex",
-  justifyContent: "center",
-  marginTop: "35px",
-};
-
-const buttonStyle = {
-  backgroundColor: "#1e293b",
-  color: "white",
-  border: "none",
-  padding: "14px 30px",
-  borderRadius: "8px",
-  cursor: "pointer",
-  fontSize: "16px",
-};
-
-const toggleContainer = {
-  display: "flex",
-  alignItems: "center",
-  cursor: "pointer",
-};
-
-const toggleSwitch = {
-  width: "60px",
-  height: "30px",
-  borderRadius: "20px",
-  padding: "3px",
-  transition: "0.3s",
-};
-
-const toggleCircle = {
-  width: "24px",
-  height: "24px",
-  backgroundColor: "white",
-  borderRadius: "50%",
-  transition: "0.3s",
-};
