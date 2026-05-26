@@ -6,6 +6,7 @@ import {
   ProfileOutlined,
   CheckCircleOutlined,
   SettingOutlined,
+  LogoutOutlined,
 } from "@ant-design/icons";
 
 const { Sider, Content } = Layout;
@@ -14,6 +15,15 @@ const { Title } = Typography;
 export default function StudentLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // clear stored authentication data
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    // redirect to sign in page
+    navigate("/signin");
+  };
 
   const menuItems = [
     {
@@ -41,7 +51,21 @@ export default function StudentLayout() {
       icon: <SettingOutlined />,
       label: "Settings",
     },
+    {
+      key: "logout",
+      icon: <LogoutOutlined />,
+      label: "Logout",
+      danger: true,
+    },
   ];
+
+  const handleMenuClick = ({ key }) => {
+    if (key === "logout") {
+      handleLogout();
+    } else {
+      navigate(key);
+    }
+  };
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -63,7 +87,7 @@ export default function StudentLayout() {
           mode="inline"
           selectedKeys={[location.pathname]}
           items={menuItems}
-          onClick={({ key }) => navigate(key)}
+          onClick={handleMenuClick}
           style={{
             background: "#1e293b",
             fontSize: "16px",
@@ -74,7 +98,6 @@ export default function StudentLayout() {
       <Layout>
         <Content
           style={{
-        
             background: "#f8fafc",
             minHeight: "100vh",
           }}

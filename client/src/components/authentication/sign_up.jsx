@@ -79,9 +79,9 @@ export default function SignUp() {
 
     setTimeout(() => {
       if (accountType === "student") {
-        window.location.href = "/student/explore";
+        window.location.href = "/signin";
       } else {
-        window.location.href = "/tutor/courses";
+        window.location.href = "/signin";
       }
     }, 1000);
   };
