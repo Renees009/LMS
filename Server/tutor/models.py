@@ -1,3 +1,34 @@
+from django.conf import settings
 from django.db import models
 
-# Create your models here.
+
+class TutorProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    tutor_name = models.CharField(max_length=255, blank=True)
+    tutor_bio = models.TextField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.tutor_name or str(self.user)
+
+
+class TutorCourse(models.Model):
+    tutor_profile = models.ForeignKey(TutorProfile, on_delete=models.CASCADE, related_name="tutor_courses")
+    course = models.ForeignKey("course.Course", on_delete=models.CASCADE, related_name="tutor_courses")
+
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+
+    notes = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("tutor_profile", "course")
+
+    def __str__(self):
+        return f"{self.tutor_profile} - {self.course.title}"
+
