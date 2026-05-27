@@ -5,9 +5,19 @@ from .models import TutorCourse, TutorProfile
 
 @admin.register(TutorProfile)
 class TutorProfileAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "tutor_name", "created_at", "updated_at")
-    search_fields = ("tutor_name", "user__username")
+    list_display = (
+        "id",
+        "user",
+        "tutor_name",
+        "specialization",
+        "contact_number",
+        "email",
+        "created_at",
+        "updated_at",
+    )
+    search_fields = ("tutor_name", "specialization", "email", "user__username")
     ordering = ("-created_at",)
+
 
 
 @admin.register(TutorCourse)

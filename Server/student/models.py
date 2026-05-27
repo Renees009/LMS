@@ -5,8 +5,12 @@ from django.db import models
 class StudentProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
-    # Student details
+   
     student_name = models.CharField(max_length=255)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    bio = models.TextField(blank=True)
+    profile_image = models.ImageField(upload_to="student_profiles/", blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

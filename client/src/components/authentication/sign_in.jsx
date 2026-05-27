@@ -11,55 +11,83 @@ import {
 
 const { Title, Text } = Typography;
 
-const ACCOUNTS_KEY = "lms_accounts_v1";
-
-function loadAccounts() {
-  try {
-    return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "{}");
-  } catch {
-    return {};
-  }
-}
-
-function makeFakeToken() {
-  return `ui_token_${Math.random().toString(16).slice(2)}`;
-}
+const API_BASE = "http://localhost:8000";
 
 export default function SignIn() {
   const [loading, setLoading] = useState(false);
+  const [form] = Form.useForm();
 
-  const onFinish = (values) => {
+  const onFinish = async (values) => {
     const { username, password } = values;
 
-    if (username !== password) {
-      message.error("Invalid username or password");
-      return;
-    }
-
-    const accounts = loadAccounts();
-    const account = accounts[username];
-
-    if (!account || account.password !== password) {
-      message.error("Invalid   or password");
-      return;
-    }
-
     setLoading(true);
+    try {
+      console.log("Attempting login for user:", username);
 
-    setAuth({
-      token: makeFakeToken(),
-      role: account.role,
-    });
+      const requestBody = {
+        username,
+        password,
+      };
 
-    message.success("Login successful");
+      console.log("Sending login request to /api/auth/login/");
 
-    setTimeout(() => {
-      if (account.role === "student") {
-        window.location.href = "/student/explore";
-      } else {
-        window.location.href = "/tutor/courses";
+      const res = await fetch(`${API_BASE}/api/auth/login/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log("Response status:", res.status);
+
+      const data = await res.json().catch((err) => {
+        console.error("Failed to parse JSON response:", err);
+        return null;
+      });
+
+      console.log("Response data:", data);
+
+      if (!res.ok) {
+        console.error("Login error:", data);
+        const errorMsg =
+          data?.error || data?.detail || "Invalid username or password";
+        message.error(errorMsg);
+        return;
       }
-    }, 1000);
+
+      const access = data?.access;
+      const role = data?.role;
+
+      if (!access || !role) {
+        console.error("Missing access token or role in response:", data);
+        message.error("Server error: incomplete response");
+        return;
+      }
+
+      console.log("Login successful:", { username, role });
+      setAuth({ token: access, role });
+      message.success("Login successful");
+
+
+      form.resetFields();
+
+      setTimeout(() => {
+        if (role === "student") {
+          window.location.href = "/student/explore";
+        } else if (role === "tutor") {
+          window.location.href = "/tutor/courses";
+        } else {
+          console.warn("Unknown role:", role);
+          window.location.href = "/student/explore";
+        }
+      }, 500);
+    } catch (error) {
+      console.error("Login request error:", error);
+      message.error("Network error: " + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

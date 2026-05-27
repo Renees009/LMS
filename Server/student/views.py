@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from course.models import Course
 from tutor.models import TutorCourse
@@ -11,6 +12,79 @@ from .serializers import (
     StudentCourseCompletionSerializer,
     StudentCourseEnrollmentSerializer,
 )
+
+
+class StudentMeProfileView(APIView):
+    """
+    Get and update student's own profile.
+    Ensures data is persisted to both Django ORM and MySQL database.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """Retrieve the authenticated user's student profile"""
+        try:
+            profile = StudentProfile.objects.get(user=request.user)
+            return Response(
+                {
+                    "id": profile.id,
+                    "student_name": profile.student_name,
+                    "email": profile.email,
+                    "phone": profile.phone,
+                    "bio": profile.bio,
+                    "created_at": profile.created_at,
+                    "updated_at": profile.updated_at,
+                },
+                status=status.HTTP_200_OK,
+            )
+        except StudentProfile.DoesNotExist:
+            return Response(
+                {"error": "Profile not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+    def put(self, request):
+        """Update the authenticated user's student profile"""
+        try:
+            profile = StudentProfile.objects.get(user=request.user)
+
+            if "student_name" in request.data:
+                profile.student_name = request.data["student_name"]
+            if "email" in request.data:
+                profile.email = request.data["email"]
+           
+                request.user.email = request.data["email"]
+                request.user.save()
+            if "phone" in request.data:
+                profile.phone = request.data["phone"]
+            if "bio" in request.data:
+                profile.bio = request.data["bio"]
+
+           
+            profile.save()
+
+            return Response(
+                {
+                    "id": profile.id,
+                    "student_name": profile.student_name,
+                    "email": profile.email,
+                    "phone": profile.phone,
+                    "bio": profile.bio,
+                    "created_at": profile.created_at,
+                    "updated_at": profile.updated_at,
+                },
+                status=status.HTTP_200_OK,
+            )
+        except StudentProfile.DoesNotExist:
+            return Response(
+                {"error": "Profile not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class StudentMeEnrollmentListCreateView(generics.ListCreateAPIView):

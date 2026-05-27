@@ -10,8 +10,17 @@ class TutorProfileSerializer(serializers.ModelSerializer):
             "id",
             "user",
             "tutor_name",
+            "specialization",
+            "contact_number",
+            "email",
             "tutor_bio",
+            "profile_image",
+            "created_at",
+            "updated_at",
         ]
+        read_only_fields = ["user", "created_at", "updated_at"]
+
+
 
 
 class TutorCourseSerializer(serializers.ModelSerializer):
