@@ -45,6 +45,18 @@ class LoginSerializer(serializers.Serializer):
         return data
 
 
+class TutorPasswordChangeSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True, required=True, min_length=1)
+    new_password = serializers.CharField(write_only=True, required=True, min_length=6)
+    confirm_password = serializers.CharField(write_only=True, required=True, min_length=1)
+
+    def validate(self, data):
+        if data.get("new_password") != data.get("confirm_password"):
+            raise serializers.ValidationError({"confirm_password": "Password mismatch"})
+        return data
+
+
+
 class StudentProfileSerializer(serializers.Serializer):
     
     student_name = serializers.CharField(max_length=255)

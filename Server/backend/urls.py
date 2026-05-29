@@ -24,6 +24,8 @@ from api.views import home
 
 from course.views import CourseListView, CourseDetailView
 from tutor.views import TutorCourseByCourseIdListView, TutorProfileMeRetrieveUpdateView
+from auth.views import TutorPasswordChangeView
+
 
 from student.views import (
     StudentMeEnrollmentListCreateView,
@@ -62,6 +64,10 @@ urlpatterns = [
 
     # Tutor Profile (me)
     path('api/tutor/me/profile/', TutorProfileMeRetrieveUpdateView.as_view(), name='tutor-me-profile'),
+
+    # Tutor Password Change
+    path('api/tutor/me/password/', TutorPasswordChangeView.as_view(), name='tutor-me-password'),
+
 
     # Student Profile (me)
     path('api/student/me/profile/', StudentMeProfileView.as_view(), name='student-me-profile'),

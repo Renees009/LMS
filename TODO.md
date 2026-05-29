@@ -1,7 +1,17 @@
-- [x] Implement backend signup endpoint (/api/auth/signup/) that creates Django User + StudentProfile/TutorProfile and returns SimpleJWT tokens + role
-- [x] Wire backend URL route for /api/auth/signup/ in Server/backend/urls.py
-- [x] Update frontend SignUp component to call /api/auth/signup/ and redirect based on returned role
-- [x] Quick manual test: signup student/tutor and ensure JWT is stored + protected endpoints work
+# TODO
+
+## Completed
+- [ ] (none yet)
+
+## Planned Implementation (Tutor profile image + settings)
+1. [x] Backend: add DELETE support to `TutorProfileMeRetrieveUpdateView` to remove tutor `profile_image` from storage and set DB field to null.
+
+2. [x] Backend: implement tutor password change endpoint (verify old password; set new password).
+3. [x] Frontend: add delete icon/button near tutor avatar that calls DELETE endpoint.
+
+4. [x] Frontend: update tutor settings page to call password-change endpoint (old/new/confirm) and show masked old password (no exact password display).
+
+5. [x] Test flow: upload -> display -> delete -> settings password change end-to-end.
 
 
 

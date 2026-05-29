@@ -14,16 +14,43 @@ const { Title, Text } = Typography;
 export default function TutorSettings() {
   const [darkTheme, setDarkTheme] = useState(false);
   const [form] = Form.useForm();
+  const API_BASE = "http://localhost:8000";
 
-  const onFinish = (values) => {
+  const onFinish = async (values) => {
     if (values.newPassword !== values.confirmPassword) {
       message.error("Password mismatch!");
       return;
     }
 
-    message.success("Password changed successfully!");
-    form.resetFields(["newPassword", "confirmPassword"]);
+    try {
+      const res = await fetch(`${API_BASE}/api/tutor/me/password/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("lms_token")}`,
+        },
+        body: JSON.stringify({
+          old_password: values.oldPassword,
+          new_password: values.newPassword,
+          confirm_password: values.confirmPassword,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        message.error(data?.error || "Failed to change password");
+        return;
+      }
+
+      message.success(data?.message || "Password changed successfully!");
+      form.resetFields(["oldPassword", "newPassword", "confirmPassword"]);
+    } catch (e) {
+      console.error(e);
+      message.error("Failed to change password");
+    }
   };
+
 
   return (
     <div
@@ -56,12 +83,15 @@ export default function TutorSettings() {
           layout="vertical"
           onFinish={onFinish}
         >
-          <Form.Item label="Old Password">
-            <Input.Password
-              value="********"
-              readOnly
-            />
+          <Form.Item
+            label="Old Password"
+            name="oldPassword"
+            rules={[{ required: true, message: "Please enter old password" }]}
+          >
+            <Input placeholder="Enter old password" />
           </Form.Item>
+
+
 
           <Form.Item
             label="New Password"
@@ -75,6 +105,7 @@ export default function TutorSettings() {
           >
             <Input placeholder="Enter new password" />
           </Form.Item>
+
 
           <Form.Item
             label="Confirm Password"

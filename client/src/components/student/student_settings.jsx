@@ -1,15 +1,138 @@
+import { useState } from "react";
+import {
+  Form,
+  Input,
+  Button,
+  Switch,
+  Typography,
+  Card,
+  message,
+} from "antd";
+
+const { Title, Text } = Typography;
+
 export default function StudentSettings() {
+  const [darkTheme, setDarkTheme] = useState(false);
+  const [form] = Form.useForm();
+  const API_BASE = "http://localhost:8000";
+
+  const onFinish = async (values) => {
+    if (values.newPassword !== values.confirmPassword) {
+      message.error("Password mismatch!");
+      return;
+    }
+
+    // Note: Backend currently implements password change only for tutors.
+    // This UI is implemented to match the tutor settings UX; it will call the tutor endpoint.
+    // If student password change endpoint is later added, update the URL.
+    try {
+      const res = await fetch(`${API_BASE}/api/tutor/me/password/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("lms_token")}`,
+        },
+        body: JSON.stringify({
+          old_password: values.oldPassword,
+          new_password: values.newPassword,
+          confirm_password: values.confirmPassword,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        message.error(data?.error || "Failed to change password");
+        return;
+      }
+
+      message.success(data?.message || "Password changed successfully!");
+      form.resetFields(["oldPassword", "newPassword", "confirmPassword"]);
+    } catch (e) {
+      console.error(e);
+      message.error("Failed to change password");
+    }
+  };
+
   return (
     <div
       style={{
-        backgroundColor: "white",
         minHeight: "100vh",
-        padding: "20px",
+        padding: "40px",
+        backgroundColor: darkTheme ? "#1e293b" : "#f8fafc",
+        transition: "0.3s",
       }}
     >
-      <h2 style={{ color: "black" }}>
-        Settings
-      </h2>
+      <Card
+        style={{
+          maxWidth: 700,
+          margin: "auto",
+          borderRadius: 12,
+        }}
+      >
+        <Title
+          level={2}
+          style={{
+            textAlign: "center",
+            color: darkTheme ? "#1e293b" : "#1e293b",
+          }}
+        >
+          Student Settings
+        </Title>
+
+        <Form form={form} layout="vertical" onFinish={onFinish}>
+          <Form.Item
+            label="Old Password"
+            name="oldPassword"
+            rules={[{ required: true, message: "Please enter old password" }]}
+          >
+            <Input placeholder="Enter old password" />
+          </Form.Item>
+
+          <Form.Item
+            label="New Password"
+            name="newPassword"
+            rules={[
+              {
+                required: true,
+                message: "Please enter new password",
+              },
+            ]}
+          >
+            <Input placeholder="Enter new password" />
+          </Form.Item>
+
+          <Form.Item
+            label="Confirm Password"
+            name="confirmPassword"
+            rules={[
+              {
+                required: true,
+                message: "Please confirm password",
+              },
+            ]}
+          >
+            <Input.Password placeholder="Confirm password" />
+          </Form.Item>
+
+          <Form.Item style={{ textAlign: "center" }}>
+            <Button type="primary" htmlType="submit" size="large">
+              Change Password
+            </Button>
+          </Form.Item>
+
+          <Form.Item>
+            <Text strong>Theme</Text>
+            <div style={{ marginTop: 10 }}>
+              <Switch checked={darkTheme} onChange={setDarkTheme} />{" "}
+              <span style={{ marginLeft: 10 }}>
+                {darkTheme ? "Dark Theme" : "Light Theme"}
+              </span>
+            </div>
+          </Form.Item>
+        </Form>
+      </Card>
     </div>
   );
 }
+

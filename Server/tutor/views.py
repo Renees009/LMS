@@ -28,7 +28,6 @@ class TutorProfileMeRetrieveUpdateView(generics.GenericAPIView):
             profile = TutorProfile.objects.create(user=request.user, tutor_bio="")
         serializer = self.serializer_class(profile)
         data = serializer.data
-        # include fullname as requested (user,username)
         data["username"] = request.user.username
         return Response(data)
 
@@ -38,11 +37,31 @@ class TutorProfileMeRetrieveUpdateView(generics.GenericAPIView):
     def patch(self, request, *args, **kwargs):
         return self._update(request, partial=True)
 
+    def delete(self, request, *args, **kwargs):
+        profile, _ = TutorProfile.objects.get_or_create(user=request.user, defaults={"tutor_bio": ""})
+
+        # Delete file from storage if it exists
+        if profile.profile_image:
+            try:
+                profile.profile_image.delete(save=False)
+            except Exception:
+                # Even if file deletion fails, we still clear DB field.
+                pass
+
+        profile.profile_image = None
+        profile.save(update_fields=["profile_image"])
+
+        serializer = self.serializer_class(profile)
+        data = serializer.data
+        data["username"] = request.user.username
+        return Response(data, status=status.HTTP_200_OK)
+
     def _update(self, request, partial: bool):
         profile, _ = TutorProfile.objects.get_or_create(user=request.user, defaults={"tutor_bio": ""})
         serializer = self.serializer_class(profile, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 

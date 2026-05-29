@@ -136,16 +136,52 @@ export default function TutorProfile() {
           />
 
           <br />
-          <Upload
-            showUploadList={false}
-            beforeUpload={() => false}
-            onChange={handleUpload}
-          >
-            <Button icon={<UploadOutlined />} style={{ marginTop: "15px" }}>
-              Change Photo
-            </Button>
-          </Upload>
+          <div style={{ display: "flex", justifyContent: "center", gap: 12, alignItems: "center" }}>
+            <Upload
+              showUploadList={false}
+              beforeUpload={() => false}
+              onChange={handleUpload}
+            >
+              <Button icon={<UploadOutlined />} style={{ marginTop: "15px" }}>
+                Change Photo
+              </Button>
+            </Upload>
+
+            {profileImage ? (
+              <Button
+                danger
+                type="text"
+                style={{ marginTop: "15px" }}
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`${API_BASE}/api/tutor/me/profile/`, {
+                      method: "DELETE",
+                      headers: {
+                        "Authorization": `Bearer ${localStorage.getItem('lms_token')}`,
+                      },
+                    });
+
+                    if (!res.ok) {
+                      message.error("Failed to delete profile image");
+                      return;
+                    }
+
+                    setProfileImage(null);
+                    selectedFileRef.current = null;
+                    message.success("Profile image deleted");
+                    await fetchProfile();
+                  } catch (e) {
+                    console.error(e);
+                    message.error("Failed to delete profile image");
+                  }
+                }}
+              >
+                Delete
+              </Button>
+            ) : null}
+          </div>
         </div>
+
 
         <Form
           form={form}
@@ -194,7 +230,7 @@ export default function TutorProfile() {
               <Button type="primary" htmlType="submit">
                 Save
               </Button>
-              <Button onClick={fetchProfile}>Update</Button>
+              
             </Space>
           </Form.Item>
         </Form>
