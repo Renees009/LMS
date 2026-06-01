@@ -15,14 +15,11 @@ from .serializers import (
 
 
 class StudentMeProfileView(APIView):
-    """
-    Get and update student's own profile.
-    Ensures data is persisted to both Django ORM and MySQL database.
-    """
+    
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        """Retrieve the authenticated user's student profile"""
+        
         try:
             profile = StudentProfile.objects.get(user=request.user)
             return Response(
@@ -44,7 +41,6 @@ class StudentMeProfileView(APIView):
             )
 
     def put(self, request):
-        """Update the authenticated user's student profile"""
         try:
             profile = StudentProfile.objects.get(user=request.user)
 
