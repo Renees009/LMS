@@ -1,22 +1,22 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
-import SignIn from "./components/authentication/sign_in";
-import SignUp from "./components/authentication/sign_up";
+import SignIn from "./components/authentication/SignIn";
+import SignUp from "./components/authentication/SignUp";
 
-import StudentLayout from "./components/student/student_layout";
-import StudentProfile from "./components/student/student_profile";
-import ExploreCourse from "./components/student/explore_course";
-import EnrolledCourse from "./components/student/enrolled_course";
-import CompletedCourse from "./components/student/completed_course";
-import Settings from "./components/student/student_settings";
+import StudentLayout from "./components/student/StudentLayout";
+import StudentProfile from "./components/student/StudentProfile";
+import ExploreCourse from "./components/student/ExploreCourse";
+import EnrolledCourse from "./components/student/EnrolledCourse";
+import CompletedCourse from "./components/student/CompletedCourse";
+import Settings from "./components/student/StudentSettings";
 
-import TutorCourse from "./components/tutor/tutor_course";
-import AddCourse from "./components/tutor/add_course";
-import TutorProfile from "./components/tutor/tutor_profile";
-import TutorSettings from "./components/tutor/tutor_settings";
-import TutorLayout from "./components/tutor/tutor_layout";
-import ManageLessons from "./components/tutor/manage_lessons";
-import ViewEnrollments from "./components/tutor/view_enrollments";
+import TutorCourse from "./components/tutor/TutorCourse";
+import AddCourse from "./components/tutor/AddCourse";
+import TutorProfile from "./components/tutor/TutorProfile";
+import TutorSettings from "./components/tutor/TutorSettings";
+import TutorLayout from "./components/tutor/TutorLayout";
+import ManageLessons from "./components/tutor/ManageLessons";
+import ViewEnrollments from "./components/tutor/ViewEnrollments";
 
 
 import { getRole, getToken } from "./auth/auth";

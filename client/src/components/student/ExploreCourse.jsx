@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, Col, Row, Input, Spin, Typography, message } from "antd";
-import CourseCard from "./_course_card";
+import CourseCard from "./CourseCard";
 
 const { Title } = Typography;
 

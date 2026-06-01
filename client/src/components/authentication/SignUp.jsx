@@ -97,7 +97,7 @@ export default function SignUp() {
               ? data.errors.password[0] 
               : data.errors.password;
           } else {
-            // Show first error found
+           
             const firstKey = Object.keys(data.errors)[0];
             if (firstKey) {
               const firstError = data.errors[firstKey];

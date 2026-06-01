@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, Col, Row, Spin, Tag, Typography, message } from "antd";
-import CourseCard from "./_course_card";
+import CourseCard from "./CourseCard";
 
 const { Title } = Typography;
 const API_BASE = "http://localhost:8000";
