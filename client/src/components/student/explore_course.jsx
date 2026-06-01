@@ -26,7 +26,8 @@ export default function ExploreCourse() {
   useEffect(() => {
     const loadCourses = async () => {
       try {
-        setLoading(true);n
+        setLoading(true);
+
         const res = await fetch(`${API_BASE}/api/courses/`, {
           method: "GET",
           headers: {

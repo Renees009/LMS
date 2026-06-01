@@ -45,10 +45,7 @@ export default function EnrolledCourse() {
         Enrolled Courses
       </Title>
 
-      <Card style={{ marginBottom: 16, borderRadius: 12 }}>
-        <Tag color="blue">{enrollments.length} enrolled</Tag>
-      </Card>
-
+  
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
           <Spin size="large" />

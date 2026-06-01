@@ -89,11 +89,15 @@ class StudentMeProfileView(APIView):
 
 class StudentMeEnrollmentListCreateView(generics.ListCreateAPIView):
     serializer_class = StudentCourseEnrollmentSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        
-        return StudentCourseEnrollment.objects.select_related("course", "student_profile")
+        student_profile = get_object_or_404(StudentProfile, user=self.request.user)
+        return StudentCourseEnrollment.objects.filter(student_profile=student_profile).select_related(
+            "course",
+            "student_profile",
+        )
+
 
     def perform_create(self, serializer):
 
@@ -113,16 +117,20 @@ class StudentMeEnrollmentListCreateView(generics.ListCreateAPIView):
 
 class StudentMeCompletionListCreateView(generics.ListCreateAPIView):
     serializer_class = StudentCourseCompletionSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return StudentCourseCompletion.objects.select_related(
+        student_profile = get_object_or_404(StudentProfile, user=self.request.user)
+        return StudentCourseCompletion.objects.filter(
+            student_profile=student_profile
+        ).select_related(
             "student_profile",
             "enrollment",
             "enrollment__course",
             "tutor_course",
             "tutor_course__tutor_profile",
         )
+
 
     def perform_create(self, serializer):
        

@@ -1,13 +1,8 @@
-# LMS TODO
+# TODO - Completed course details per logged-in student
 
-- [ ] Implement UI for Explore Courses (show all courses + details) in `client/src/components/student/explore_course.jsx`
-- [ ] Implement UI for Enrolled Courses (show enrolled courses + details) in `client/src/components/student/enrolled_course.jsx`
-- [ ] Implement UI for Completed Courses (show completed courses + details) in `client/src/components/student/completed_course.jsx`
+- [x] Update backend serializer to include Course fields expected by UI (title, category, duration, level, description, thumbnail_url)
+- [x] Verify Completed Courses UI renders course details from /api/me/completions/ for the logged-in student
 
-- [ ] Verify endpoints used:
-  - `GET /api/courses/`
-  - `GET /api/me/enrollments/`
-  - `GET /api/me/completions/`
-- [ ] Manual verification in browser
+- [ ] (Optional) Add frontend fallback mapping if backend shape differs
 
 
