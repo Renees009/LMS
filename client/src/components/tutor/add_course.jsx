@@ -2,12 +2,15 @@ import { useState } from "react";
 import {
   Form,
   Input,
+  Button,
   Select,
   Upload,
-  Button,
   Card,
+  Space,
   Typography,
   message,
+  Divider,
+  InputNumber,
 } from "antd";
 import {
   UploadOutlined,
@@ -15,164 +18,206 @@ import {
 } from "@ant-design/icons";
 
 const { Title } = Typography;
-const { Option } = Select;
 const { TextArea } = Input;
 
-export default function AddCourse() {
-  const [category, setCategory] = useState("");
-  const [thumbnail, setThumbnail] = useState(null);
-  const [form] = Form.useForm();
+const API_BASE = "http://127.0.0.1:8000";
 
-  const handleSubmit = (values) => {
-    console.log(values);
-    message.success("Course added successfully!");
-    form.resetFields();
-    setThumbnail(null);
+export default function AddCourse() {
+  const [form] = Form.useForm();
+  const [lessonCount, setLessonCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const handleLessonCount = (value) => {
+    setLessonCount(value || 0);
   };
 
-  const thumbnailProps = {
-    beforeUpload: (file) => {
-      setThumbnail(URL.createObjectURL(file));
-      return false;
-    },
-    maxCount: 1,
+  const onFinish = async (values) => {
+    try {
+      setLoading(true);
+
+      const formData = new FormData();
+
+      formData.append("title", values.title);
+      formData.append("category", values.category);
+      formData.append("duration", values.duration);
+      formData.append("level", values.level);
+      formData.append("description", values.description);
+      formData.append("number_of_lessons", values.number_of_lessons);
+
+      if (values.thumbnail?.file) {
+        formData.append("thumbnail", values.thumbnail.file.originFileObj);
+      }
+
+      const lessons = [];
+
+      for (let i = 0; i < values.number_of_lessons; i++) {
+        const lesson = {
+          title: values.lessons?.[i]?.title,
+          description: values.lessons?.[i]?.description,
+        };
+
+        lessons.push(lesson);
+      }
+
+      formData.append("lessons", JSON.stringify(lessons));
+
+      values.lessons?.forEach((lesson, index) => {
+        if (lesson.material?.file) {
+          formData.append(
+            `lesson_material_${index}`,
+            lesson.material.file.originFileObj
+          );
+        }
+
+        if (lesson.video?.file) {
+          formData.append(
+            `lesson_video_${index}`,
+            lesson.video.file.originFileObj
+          );
+        }
+
+      });
+
+      const response = await fetch(`${API_BASE}/api/course/create/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("lms_token")}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        message.success("Course Added Successfully");
+        form.resetFields();
+        setLessonCount(0);
+      } else {
+        message.error(data.error || "Failed to add course");
+      }
+    } catch (error) {
+      console.error(error);
+      message.error("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#f8fafc",
-        padding: "30px",
-      }}
-    >
-      <Card
-        style={{
-          maxWidth: 900,
-          margin: "auto",
-          borderRadius: 12,
-        }}
-      >
-        <Title
-          level={2}
-          style={{ textAlign: "center" }}
-        >
-          Add New Course
-        </Title>
+    <div className="p-6">
+      <Card className="shadow-lg rounded-xl">
+        <Title level={3}>Add Course</Title>
 
         <Form
-          form={form}
           layout="vertical"
-          onFinish={handleSubmit}
+          form={form}
+          onFinish={onFinish}
         >
-          {/* Thumbnail */}
-          <Form.Item label="Course Thumbnail">
-            <div style={{ textAlign: "center" }}>
-              <img
-                src={
-                  thumbnail ||
-                  "https://via.placeholder.com/180x120?text=Course+Image"
-                }
-                alt="thumbnail"
-                style={{
-                  width: 180,
-                  height: 120,
-                  borderRadius: 8,
-                  marginBottom: 15,
-                }}
-              />
-
-              <Upload {...thumbnailProps}>
-                <Button icon={<UploadOutlined />}>
-                  Upload Thumbnail
-                </Button>
-              </Upload>
-            </div>
+          
+          <Form.Item
+            label="Course Thumbnail"
+            name="thumbnail"
+            valuePropName="file"
+          >
+            <Upload beforeUpload={() => false} maxCount={1}>
+              <Button icon={<UploadOutlined />}>
+                Upload Thumbnail
+              </Button>
+            </Upload>
           </Form.Item>
 
+          
           <Form.Item
             label="Course Title"
             name="title"
             rules={[
-              { required: true, message: "Enter course title" },
+              {
+                required: true,
+                message: "Please enter course title",
+              },
             ]}
           >
             <Input placeholder="Enter course title" />
           </Form.Item>
 
           <Form.Item
-            label="Tutor Details"
-            name="tutor"
-            rules={[
-              { required: true, message: "Enter tutor details" },
-            ]}
-          >
-            <Input placeholder="Enter tutor details" />
-          </Form.Item>
-
-          <Form.Item
             label="Course Category"
             name="category"
             rules={[
-              { required: true, message: "Select category" },
+              {
+                required: true,
+                message: "Please select category",
+              },
             ]}
           >
-            <Select
-              placeholder="Select category"
-              onChange={(value) => setCategory(value)}
-            >
-              <Option value="Programming">Programming</Option>
-              <Option value="Web Development">
+            <Select placeholder="Select category">
+              <Select.Option value="Programming">
+                Programming
+              </Select.Option>
+
+              <Select.Option value="Web Development">
                 Web Development
-              </Option>
-              <Option value="UI/UX Design">
-                UI/UX Design
-              </Option>
-              <Option value="Data Science">
-                Data Science
-              </Option>
-              <Option value="Others">Others</Option>
+              </Select.Option>
+
+              <Select.Option value="AI">
+                AI
+              </Select.Option>
+
+              
+              <Select.Option value="Data Science">
+                Others
+              </Select.Option>
             </Select>
           </Form.Item>
-
-          {category === "Others" && (
-            <Form.Item
-              label="New Category"
-              name="newCategory"
-              rules={[
-                {
-                  required: true,
-                  message: "Enter new category",
-                },
-              ]}
-            >
-              <Input placeholder="Enter course category" />
-            </Form.Item>
-          )}
+            
 
           <Form.Item
             label="Course Duration"
             name="duration"
+            rules={[
+              {
+                required: true,
+                message: "Enter course duration",
+              },
+            ]}
           >
-            <Input placeholder="e.g. 8 weeks" />
+            <Input placeholder="Example: 10 Hours" />
           </Form.Item>
 
           <Form.Item
             label="Course Level"
             name="level"
+            rules={[
+              {
+                required: true,
+                message: "Select level",
+              },
+            ]}
           >
             <Select placeholder="Select level">
-              <Option value="Beginner">Beginner</Option>
-              <Option value="Intermediate">
+              <Select.Option value="Beginner">
+                Beginner 
+              </Select.Option>
+
+              <Select.Option value="Intermediate">
                 Intermediate
-              </Option>
-              <Option value="Advanced">Advanced</Option>
+              </Select.Option>
+
+              <Select.Option value="Advanced">
+                Advanced
+              </Select.Option>
             </Select>
           </Form.Item>
 
           <Form.Item
             label="Description"
             name="description"
+            rules={[
+              {
+                required: true,
+                message: "Enter course description",
+              },
+            ]}
           >
             <TextArea
               rows={4}
@@ -180,45 +225,102 @@ export default function AddCourse() {
             />
           </Form.Item>
 
-          <Form.Item label="Upload Videos">
-            <Upload
-              multiple
-              beforeUpload={() => false}
-            >
-              <Button icon={<UploadOutlined />}>
-                Upload Videos
-              </Button>
-            </Upload>
+          {/* Number of Lessons */}
+          <Form.Item
+            label="Number of Lessons"
+            name="number_of_lessons"
+            rules={[
+              {
+                required: true,
+                message: "Enter number of lessons",
+              },
+            ]}
+          >
+            <InputNumber
+              min={1}
+              className="w-full"
+              placeholder="Enter number of lessons"
+              onChange={handleLessonCount}
+            />
           </Form.Item>
 
-          <Form.Item label="Course Materials">
-            <Upload
-              multiple
-              beforeUpload={() => false}
+          {Array.from({ length: lessonCount }).map((_, index) => (
+            <Card
+              key={index}
+              className="mb-5 border rounded-xl"
+              title={`Lesson ${index + 1}`}
             >
-              <Button icon={<PlusOutlined />}>
-                Upload PDFs / PPTs
-              </Button>
-            </Upload>
-          </Form.Item>
+              <Form.Item
+                label="Lesson Title"
+                name={["lessons", index, "title"]}
+                rules={[
+                  {
+                    required: true,
+                    message: "Enter lesson title",
+                  },
+                ]}
+              >
+                <Input placeholder="Enter lesson title" />
+              </Form.Item>
 
-          <Form.Item style={{ textAlign: "center" }}>
+              <Form.Item
+                label="Lesson Description"
+                name={["lessons", index, "description"]}
+                rules={[
+                  {
+                    required: true,
+                    message: "Enter lesson description",
+                  },
+                ]}
+              >
+                <TextArea
+                  rows={3}
+                  placeholder="Enter lesson description"
+                />
+              </Form.Item>
+
+              {/* Course Material */}
+              <Form.Item
+                label="Course Material"
+                name={["lessons", index, "material"]}
+                valuePropName="file"
+              >
+                <Upload beforeUpload={() => false} maxCount={1}>
+                  <Button icon={<UploadOutlined />}>
+                    Upload Material
+                  </Button>
+                </Upload>
+              </Form.Item>
+
+              {/* Video */}
+              <Form.Item
+                label="Video"
+                name={["lessons", index, "video"]}
+                valuePropName="file"
+              >
+                <Upload beforeUpload={() => false} maxCount={1}>
+                  <Button icon={<UploadOutlined />}>
+                    Upload Video
+                  </Button>
+                </Upload>
+              </Form.Item>
+            </Card>
+          ))}
+
+
+          <Divider />
+
+          {/* Submit */}
+          <Space>
             <Button
               type="primary"
               htmlType="submit"
-              size="large"
+              loading={loading}
+              
             >
-              Add Course
+              Upload course
             </Button>
-
-            <Button
-              htmlType="reset"
-              size="large"
-              style={{ marginLeft: 15 }}
-            >
-              Reset
-            </Button>
-          </Form.Item>
+          </Space>
         </Form>
       </Card>
     </div>

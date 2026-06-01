@@ -22,9 +22,6 @@ export default function StudentSettings() {
       return;
     }
 
-    // Note: Backend currently implements password change only for tutors.
-    // This UI is implemented to match the tutor settings UX; it will call the tutor endpoint.
-    // If student password change endpoint is later added, update the URL.
     try {
       const res = await fetch(`${API_BASE}/api/tutor/me/password/`, {
         method: "POST",

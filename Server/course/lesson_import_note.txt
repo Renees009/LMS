@@ -1,0 +1,9 @@
+Lesson endpoint note:
+- client add_course.jsx currently POSTs to http://127.0.0.1:8000/api/course/create/
+- This endpoint does not exist in current backend code.
+- Need to implement instructor course + lessons upload endpoint that creates:
+  - Course
+  - Lesson(s)
+  - LessonContent (text/video)
+  - TutorCourse (tutor-course mapping)
+

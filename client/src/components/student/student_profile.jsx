@@ -69,7 +69,7 @@ export default function StudentProfile() {
   const onFinish = async (values) => {
     try {
       const formData = new FormData();
-      // backend expects student_name/email/phone/bio
+      
       formData.append("student_name", values.name);
       if (values.email !== undefined) formData.append("email", values.email);
       if (values.phone !== undefined) formData.append("phone", values.phone);

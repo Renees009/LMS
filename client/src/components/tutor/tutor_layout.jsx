@@ -16,11 +16,10 @@ export default function TutorLayout() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // remove auth data from localStorage/sessionStorage
+   
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
-    // navigate to sign in page
     navigate("/signin");
   };
 
@@ -36,10 +35,21 @@ export default function TutorLayout() {
       label: "My Courses",
     },
     {
+      key: "/tutor/manage-lessons",
+      icon: <BookOutlined />,
+      label: "Manage Lessons",
+    },
+    {
+      key: "/tutor/enrollments",
+      icon: <BookOutlined />,
+      label: "View Enrollments",
+    },
+    {
       key: "/tutor/add-course",
       icon: <PlusCircleOutlined />,
       label: "Add Course",
     },
+
     {
       key: "/tutor/settings",
       icon: <SettingOutlined />,

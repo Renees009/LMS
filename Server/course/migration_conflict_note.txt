@@ -1,0 +1,11 @@
+Migration error encountered:
+- Running `python manage.py migrate` failed with:
+  MySQLdb.OperationalError (1050, "Table 'course_lesson' already exists")
+
+This implies the DB already contains the tables for the new models.
+Next options to resolve:
+1) Use `python manage.py migrate --fake course 0003...` if the schema already matches.
+2) If schema differs, drop/rename tables or manually sync.
+
+We need to confirm the current DB table structure before faking.
+

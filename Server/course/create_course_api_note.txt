@@ -1,0 +1,21 @@
+Implement POST /api/course/create/ to support client tutor AddCourse.
+
+Client posts multipart/form-data to: /api/course/create/
+Fields:
+- title, category, duration, level, description
+- number_of_lessons
+- thumbnail (optional file)
+- lessons: JSON.stringify([{title, description}, ...])
+- per-lesson files:
+  - lesson_material_{index}
+  - lesson_video_{index}
+
+Backend requirements:
+- Auth tutor only (request.user must have TutorProfile)
+- Create Course
+- Create TutorCourse(tutor_profile=request.user.tutorprofile, course=course)
+- Create Lesson(course=course, order=i+1, title)
+- Create LessonContent(lesson=lesson, content_type='text' or 'video', text=description, video_url from uploaded file path)
+  - NOTE: current LessonContent model has fields: content_type, text, video_url
+- Return created course + lessons payload.
+

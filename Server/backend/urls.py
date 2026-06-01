@@ -23,8 +23,19 @@ from rest_framework.routers import DefaultRouter
 from api.views import home
 
 from course.views import CourseListView, CourseDetailView
-from tutor.views import TutorCourseByCourseIdListView, TutorProfileMeRetrieveUpdateView
+from course.urls import urlpatterns as course_urls
+
+
+
+from tutor.views import TutorCourseByCourseIdListView
 from auth.views import TutorPasswordChangeView
+from student.views import StudentMeProfileView
+from tutor.views import TutorProfileMeRetrieveUpdateView
+
+
+
+
+
 
 
 from student.views import (
@@ -34,7 +45,7 @@ from student.views import (
 )
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
+ 
 from auth.views import SignupView, LoginView
 
 
@@ -59,11 +70,25 @@ urlpatterns = [
     path('api/courses/', CourseListView.as_view(), name='courses-list'),
     path('api/courses/<int:pk>/', CourseDetailView.as_view(), name='courses-detail'),
 
+    # Lesson / progress / instructor create
+    path('api/', include('course.urls')),
+
+    # Tutor-only lesson management + enrollments
+    path('api/tutor/', include('tutor.urls')),
+
+    # TutorCourse + tutor course items
+    path('api/tutor-courses/', TutorCourseByCourseIdListView.as_view(), name='tutor-courses'),
+
+
+
+
     # TutorCourse
     path('api/tutor-courses/', TutorCourseByCourseIdListView.as_view(), name='tutor-courses'),
 
     # Tutor Profile (me)
+    # Implemented in `tutor.views` as TutorProfileMeRetrieveUpdateView in original code.
     path('api/tutor/me/profile/', TutorProfileMeRetrieveUpdateView.as_view(), name='tutor-me-profile'),
+
 
     # Tutor Password Change
     path('api/tutor/me/password/', TutorPasswordChangeView.as_view(), name='tutor-me-password'),

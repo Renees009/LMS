@@ -17,11 +17,10 @@ export default function StudentLayout() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // clear stored authentication data
+ 
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
-    // redirect to sign in page
     navigate("/signin");
   };
 
@@ -69,7 +68,7 @@ export default function StudentLayout() {
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      {/* Sidebar */}
+      
       <Sider
         width={250}
         style={{

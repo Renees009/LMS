@@ -15,6 +15,9 @@ import AddCourse from "./components/tutor/add_course";
 import TutorProfile from "./components/tutor/tutor_profile";
 import TutorSettings from "./components/tutor/tutor_settings";
 import TutorLayout from "./components/tutor/tutor_layout";
+import ManageLessons from "./components/tutor/manage_lessons";
+import ViewEnrollments from "./components/tutor/view_enrollments";
+
 
 import { getRole, getToken } from "./auth/auth";
 
@@ -71,9 +74,12 @@ export default function App() {
           <Route index element={<TutorCourse />} />
           <Route path="courses" element={<TutorCourse />} />
           <Route path="add-course" element={<AddCourse />} />
+          <Route path="manage-lessons" element={<ManageLessons />} />
+          <Route path="enrollments" element={<ViewEnrollments />} />
           <Route path="profile" element={<TutorProfile />} />
           <Route path="settings" element={<TutorSettings />} />
         </Route>
+
           
         <Route path="/" element={<Navigate to="/signin" replace />} />
       </Routes>
