@@ -26,17 +26,10 @@ from course.views import CourseListView, CourseDetailView
 from course.urls import urlpatterns as course_urls
 
 
-
 from tutor.views import TutorCourseByCourseIdListView
 from auth.views import TutorPasswordChangeView
 from student.views import StudentMeProfileView
 from tutor.views import TutorProfileMeRetrieveUpdateView
-
-
-
-
-
-
 
 from student.views import (
     StudentMeEnrollmentListCreateView,

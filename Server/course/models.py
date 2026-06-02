@@ -1,12 +1,14 @@
-from django.conf import settings
 from django.db import models
 
 
 class Course(models.Model):
- 
-
     title = models.CharField(max_length=255)
-    thumbnail_url = models.CharField(max_length=500, blank=True)
+
+    thumbnail = models.ImageField(
+        upload_to="course_thumbnails/",
+        blank=True,
+        null=True,
+    )
 
     category = models.CharField(max_length=120)
     duration = models.PositiveIntegerField()
@@ -27,13 +29,27 @@ class Lesson(models.Model):
         on_delete=models.CASCADE,
         related_name="lessons",
     )
+
     order = models.PositiveIntegerField()
+
     title = models.CharField(max_length=255)
 
-    description = models.TextField(blank=True, default="")
+    description = models.TextField(
+        blank=True,
+        default="",
+    )
 
-    video_url = models.CharField(max_length=500, blank=True, default="")
-    material_url = models.CharField(max_length=500, blank=True, default="")
+    video_file = models.FileField(
+        upload_to="lesson_videos/",
+        blank=True,
+        null=True,
+    )
+
+    material_file = models.FileField(
+        upload_to="lesson_materials/",
+        blank=True,
+        null=True,
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -52,11 +68,13 @@ class StudentLessonCompletion(models.Model):
         on_delete=models.CASCADE,
         related_name="lesson_completions",
     )
+
     lesson = models.ForeignKey(
         "course.Lesson",
         on_delete=models.CASCADE,
         related_name="completions",
     )
+
     completed_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -64,5 +82,4 @@ class StudentLessonCompletion(models.Model):
         ordering = ["-completed_at"]
 
     def __str__(self):
-        return f"{self.student_profile} completed {self.lesson}" 
-
+        return f"{self.student_profile} completed {self.lesson}"

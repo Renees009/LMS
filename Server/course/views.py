@@ -37,7 +37,7 @@ class CourseCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        # Tutor only
+        
         tutor_profile = TutorProfile.objects.filter(user=request.user).first()
         if not tutor_profile:
             raise ValidationError({"detail": "Only tutors can create courses"})
@@ -59,16 +59,7 @@ class CourseCreateView(APIView):
 
         thumbnail = request.FILES.get("thumbnail")
 
-        thumbnail_url = ""
-        if thumbnail:
-            from django.core.files.storage import default_storage
-            from django.utils.text import slugify
-            ext = ""
-            if "." in thumbnail.name:
-                ext = thumbnail.name.split(".")[-1]
-            safe_course_title = slugify(title)[:50] or f"course"
-            save_name = f"course_thumbnails/{safe_course_title}_thumbnail.{ext}" if ext else f"course_thumbnails/{safe_course_title}_thumbnail"
-            thumbnail_url = default_storage.save(save_name, thumbnail)
+        
 
         lessons_raw = request.data.get("lessons")
 
@@ -91,14 +82,13 @@ class CourseCreateView(APIView):
             pass
         
         course = Course.objects.create(
-            title=title,
-            thumbnail_url=thumbnail_url,
-            category=category,
-
-            duration=duration,
-            level=level,
-            description=description,
-        )
+        title=title,
+        thumbnail=thumbnail,
+        category=category,
+        duration=duration,
+        level=level,
+        description=description,
+    )
 
 
         TutorCourse.objects.create(
@@ -127,10 +117,15 @@ class CourseCreateView(APIView):
             from django.core.files.storage import default_storage
             from django.utils.text import slugify
 
-            lesson.video_url = ""
-            lesson.material_url = ""
-            lesson.description = lesson_description or ""
 
+            lesson.description = lesson_description or ""
+            if video_file:
+                lesson.video_file = video_file
+
+            if material_file:
+                lesson.material_file = material_file
+
+            lesson.save()
             if video_file:
                 ext = ""
                 if "." in video_file.name:

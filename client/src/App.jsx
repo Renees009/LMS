@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import SignIn from "./components/authentication/SignIn";
 import SignUp from "./components/authentication/SignUp";
 
-import StudentLayout from "./components/student/StudentLayout";
+import StudentLayout from "./components/student/IndexStudentLayout";
 import StudentProfile from "./components/student/StudentProfile";
 import ExploreCourse from "./components/student/ExploreCourse";
 import EnrolledCourse from "./components/student/EnrolledCourse";
@@ -14,7 +14,7 @@ import TutorCourse from "./components/tutor/TutorCourse";
 import AddCourse from "./components/tutor/AddCourse";
 import TutorProfile from "./components/tutor/TutorProfile";
 import TutorSettings from "./components/tutor/TutorSettings";
-import TutorLayout from "./components/tutor/TutorLayout";
+import TutorLayout from "./components/tutor/IndexTutorLayout";
 import ManageLessons from "./components/tutor/ManageLessons";
 import ViewEnrollments from "./components/tutor/ViewEnrollments";
 
