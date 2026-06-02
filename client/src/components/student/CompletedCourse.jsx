@@ -45,9 +45,7 @@ export default function CompletedCourse() {
         Completed Courses
       </Title>
 
-      <Card style={{ marginBottom: 16, borderRadius: 12 }}>
-        <Tag color="green">{completions.length} completed</Tag>
-      </Card>
+      
 
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
@@ -56,7 +54,10 @@ export default function CompletedCourse() {
       ) : (
         <Row gutter={[16, 16]}>
           {completions.map((c) => (
-            <Col xs={24} sm={12} md={8} key={c.id}>
+            <Col xs={24}
+              sm={24}
+              md={12}
+              lg={12} key={c.id}>
               <CourseCard
                 course={c}
                 completionMeta={{

@@ -52,8 +52,12 @@ export default function EnrolledCourse() {
         </div>
       ) : (
         <Row gutter={[16, 16]}>
+          
           {enrollments.map((e) => (
-            <Col xs={24} sm={12} md={8} key={e.id}>
+            <Col xs={24}
+            sm={24}
+            md={12}
+            lg={12} key={e.id}>
               <CourseCard
                 course={e}
                 enrollmentMeta={{ status: e.status, enrolled_at: e.enrolled_at }}

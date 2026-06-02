@@ -70,8 +70,30 @@ class TutorCourseByCourseIdListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-
         return Lesson.objects.none()
+
+
+class TutorCoursesOwnedByMeListView(generics.ListAPIView):
+    """List courses owned by the logged-in tutor."""
+
+    serializer_class = None  # set below to avoid circular import
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        from tutor.models import TutorCourse as TutorCourseModel
+
+        # TutorCourse model FK: tutor_profile -> TutorProfile -> user
+        return (
+            TutorCourseModel.objects.select_related("course")
+            .filter(tutor_profile__user=self.request.user)
+            .order_by("-created_at")
+        )
+
+    def get_serializer_class(self):
+        from tutor.serializers import TutorCourseSerializer
+
+        return TutorCourseSerializer
+
 
 class TutorEnrollmentByTutorCourseIdListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
