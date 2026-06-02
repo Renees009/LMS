@@ -26,11 +26,10 @@ export default function StudentProfile() {
 
   const fetchProfile = async () => {
     try {
+      const token = localStorage.getItem("lms_token");
       const res = await fetch(`${API_BASE}/api/student/me/profile/`, {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("lms_token")}`,
-        },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) {
         message.error("Failed to load profile");
@@ -46,7 +45,7 @@ export default function StudentProfile() {
       });
 
       setUserName(data.student_name || "");
-      setProfileImage(data.profile_image || null);
+      setProfileImage(data.profile_image_url || data.profile_image || null);
     } catch (e) {
       console.error(e);
       message.error("Failed to load profile");
@@ -57,12 +56,44 @@ export default function StudentProfile() {
     fetchProfile();
   }, []);
 
-  const handleUpload = (info) => {
+  const handleUpload = async (info) => {
     const file = info.file.originFileObj;
-    if (file) {
-      selectedFileRef.current = file;
-      setProfileImage(URL.createObjectURL(file));
-      message.success("Profile image selected");
+    if (!file) return;
+
+    selectedFileRef.current = file;
+
+    const previewUrl = URL.createObjectURL(file);
+    setProfileImage(previewUrl);
+
+    try {
+      const token = localStorage.getItem("lms_token");
+
+      const formData = new FormData();
+      // Keep existing form values so backend updates don’t wipe other fields
+      const values = form.getFieldsValue();
+      formData.append("student_name", values.name);
+      if (values.email !== undefined) formData.append("email", values.email);
+      if (values.phone !== undefined) formData.append("phone", values.phone);
+      if (values.bio !== undefined) formData.append("bio", values.bio);
+      formData.append("profile_image", file);
+
+      const res = await fetch(`${API_BASE}/api/student/me/profile/`, {
+        method: "PUT",
+        body: formData,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!res.ok) {
+        message.error("Failed to upload profile image");
+        return;
+      }
+
+      message.success("Profile image updated");
+      selectedFileRef.current = null;
+      await fetchProfile();
+    } catch (e) {
+      console.error(e);
+      message.error("Failed to upload profile image");
     }
   };
 
@@ -129,20 +160,31 @@ export default function StudentProfile() {
         <div style={{ textAlign: "center", marginBottom: "30px" }}>
           <Avatar
             size={120}
-            src={profileImage}
+            src={profileImage ? `${profileImage}${profileImage.includes("?") ? "&" : "?"}t=${Date.now()}` : null}
             icon={!profileImage && <UserOutlined />}
           />
 
           <br />
           <Upload
             showUploadList={false}
-            beforeUpload={() => false}
-            onChange={handleUpload}
+            beforeUpload={(file) => {
+              // beforeUpload is the reliable place to capture the file in AntD
+              if (!file) return false;
+              selectedFileRef.current = file;
+              const previewUrl = URL.createObjectURL(file);
+              setProfileImage(previewUrl);
+              // upload immediately
+              handleUpload({ file });
+              return false; // prevent auto-upload; we control it
+            }}
           >
             <Button icon={<UploadOutlined />} style={{ marginTop: "15px" }}>
               Change Photo
             </Button>
           </Upload>
+
+          {/* Auto-upload when a new photo is selected */}
+
         </div>
 
         <Form

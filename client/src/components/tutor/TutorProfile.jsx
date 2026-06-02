@@ -24,22 +24,52 @@ export default function TutorProfile() {
 
   const [form] = Form.useForm();
 
-  const handleUpload = (info) => {
+  const handleUpload = async (info) => {
     const file = info.file.originFileObj;
-    if (file) {
-      selectedFileRef.current = file;
-      setProfileImage(URL.createObjectURL(file));
+    if (!file) return;
+
+    selectedFileRef.current = file;
+
+    // Immediate preview
+    setProfileImage(URL.createObjectURL(file));
+
+    try {
+      const token = localStorage.getItem('lms_token');
+
+      const values = form.getFieldsValue();
+      const formData = new FormData();
+      formData.append("tutor_name", values.name);
+      formData.append("specialization", values.specialization || "");
+      formData.append("contact_number", values.phone || "");
+      formData.append("email", values.email || "");
+      formData.append("profile_image", file);
+
+      const res = await fetch(`${API_BASE}/api/tutor/me/profile/`, {
+        method: "PUT",
+        body: formData,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!res.ok) {
+        message.error("Failed to upload profile image");
+        return;
+      }
+
       message.success("Profile image updated");
+      selectedFileRef.current = null;
+      await fetchProfile();
+    } catch (e) {
+      console.error(e);
+      message.error("Failed to upload profile image");
     }
   };
 
   const fetchProfile = async () => {
     try {
+      const token = localStorage.getItem('lms_token');
       const res = await fetch(`${API_BASE}/api/tutor/me/profile/`, {
         method: "GET",
-        headers: {
-          "Authorization": `Bearer ${localStorage.getItem('lms_token')}`,
-        },
+        headers: token ? { "Authorization": `Bearer ${token}` } : {},
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -54,11 +84,9 @@ export default function TutorProfile() {
    
       setUserName(data.username || "");
 
-      if (data.profile_image) {
-        setProfileImage(data.profile_image);
-      } else {
-        setProfileImage(null);
-      }
+      setProfileImage(
+        data.profile_image_url || data.profile_image || null
+      );
     } catch (e) {
       console.error(e);
     }
@@ -131,7 +159,7 @@ export default function TutorProfile() {
         <div style={{ textAlign: "center", marginBottom: "30px" }}>
           <Avatar
             size={120}
-            src={profileImage}
+            src={profileImage ? `${profileImage}${profileImage.includes("?") ? "&" : "?"}t=${Date.now()}` : null}
             icon={!profileImage && <UserOutlined />}
           />
 
@@ -139,13 +167,57 @@ export default function TutorProfile() {
           <div style={{ display: "flex", justifyContent: "center", gap: 12, alignItems: "center" }}>
             <Upload
               showUploadList={false}
-              beforeUpload={() => false}
-              onChange={handleUpload}
+              beforeUpload={(file) => {
+                if (!file) return false;
+                selectedFileRef.current = file;
+                setProfileImage(URL.createObjectURL(file));
+                handleUpload({ file });
+                return false; // prevent auto-upload
+              }}
             >
               <Button icon={<UploadOutlined />} style={{ marginTop: "15px" }}>
                 Change Photo
               </Button>
             </Upload>
+
+            <Button
+              type="primary"
+              style={{ marginTop: 12 }}
+              onClick={async () => {
+                const file = selectedFileRef.current;
+                if (!file) {
+                  message.warning("Select an image first");
+                  return;
+                }
+
+                const values = form.getFieldsValue();
+                const formData = new FormData();
+                formData.append("tutor_name", values.name);
+                formData.append("specialization", values.specialization || "");
+                formData.append("contact_number", values.phone || "");
+                formData.append("email", values.email || "");
+                formData.append("profile_image", file);
+
+                const res = await fetch(`${API_BASE}/api/tutor/me/profile/`, {
+                  method: "PUT",
+                  body: formData,
+                  headers: {
+                    "Authorization": `Bearer ${localStorage.getItem('lms_token')}`,
+                  },
+                });
+
+                if (!res.ok) {
+                  message.error("Failed to save profile image");
+                  return;
+                }
+
+                message.success("Profile image updated");
+                selectedFileRef.current = null;
+                await fetchProfile();
+              }}
+            >
+              Update Photo
+            </Button>
 
             {profileImage ? (
               <Button

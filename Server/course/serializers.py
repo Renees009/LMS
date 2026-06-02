@@ -53,9 +53,15 @@ class CourseSerializer(serializers.ModelSerializer):
         ]
 
     def get_thumbnail_url(self, obj):
-        if obj.thumbnail:
-            return obj.thumbnail.url
-        return ""
+        if not obj.thumbnail:
+            return ""
+        try:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.thumbnail.url)
+        except Exception:
+            pass
+        return obj.thumbnail.url
 
 
 class LessonCompletionSerializer(serializers.ModelSerializer):

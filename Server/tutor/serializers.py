@@ -27,6 +27,8 @@ class TutorEnrollmentSerializer(StudentCourseCompletionSerializer):
 
 
 class TutorProfileSerializer(serializers.ModelSerializer):
+    profile_image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = TutorProfile
         fields = [
@@ -38,22 +40,56 @@ class TutorProfileSerializer(serializers.ModelSerializer):
             "email",
             "tutor_bio",
             "profile_image",
+            "profile_image_url",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["user", "created_at", "updated_at"]
 
+    def get_profile_image_url(self, obj):
+        if not obj.profile_image:
+            return ""
+        try:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.profile_image.url)
+        except Exception:
+            pass
+        return obj.profile_image.url
+
 
 class TutorCourseSerializer(serializers.ModelSerializer):
-    """Returns Course fields for a tutor-owned course."""
-
-    # Flatten related course fields for simpler frontend rendering
+    
     course_id = serializers.IntegerField(source="course.id", read_only=True)
     title = serializers.CharField(source="course.title", read_only=True)
     category = serializers.CharField(source="course.category", read_only=True)
     duration = serializers.IntegerField(source="course.duration", read_only=True)
     level = serializers.CharField(source="course.level", read_only=True)
     description = serializers.CharField(source="course.description", read_only=True)
+
+    thumbnail_url = serializers.SerializerMethodField()
+    thumbnail = serializers.SerializerMethodField()
+
+    def get_thumbnail_url(self, obj):
+        try:
+            thumb = obj.course.thumbnail
+            if not thumb:
+                return ""
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(thumb.url)
+            return thumb.url
+        except Exception:
+            return ""
+
+    def get_thumbnail(self, obj):
+        try:
+            thumb = obj.course.thumbnail
+            if not thumb:
+                return ""
+            return thumb.url
+        except Exception:
+            return ""
 
     class Meta:
         model = TutorCourse
@@ -64,6 +100,8 @@ class TutorCourseSerializer(serializers.ModelSerializer):
             "duration",
             "level",
             "description",
+            "thumbnail",
+            "thumbnail_url",
             "start_date",
             "end_date",
             "notes",

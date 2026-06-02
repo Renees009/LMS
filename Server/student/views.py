@@ -11,6 +11,7 @@ from .models import StudentProfile, StudentCourseCompletion, StudentCourseEnroll
 from .serializers import (
     StudentCourseCompletionSerializer,
     StudentCourseEnrollmentSerializer,
+    StudentProfileSerializer,
 )
 
 
@@ -22,6 +23,7 @@ class StudentMeProfileView(APIView):
         
         try:
             profile = StudentProfile.objects.get(user=request.user)
+            serializer = StudentProfileSerializer(profile, context={"request": request})
             return Response(
                 {
                     "id": profile.id,
@@ -31,6 +33,8 @@ class StudentMeProfileView(APIView):
                     "bio": profile.bio,
                     "created_at": profile.created_at,
                     "updated_at": profile.updated_at,
+                    "profile_image": serializer.data.get("profile_image"),
+                    "profile_image_url": serializer.data.get("profile_image_url"),
                 },
                 status=status.HTTP_200_OK,
             )
@@ -56,7 +60,11 @@ class StudentMeProfileView(APIView):
             if "bio" in request.data:
                 profile.bio = request.data["bio"]
 
-           
+            # Handle profile image upload
+            profile_image = request.FILES.get("profile_image")
+            if profile_image:
+                profile.profile_image = profile_image
+
             profile.save()
 
             return Response(
@@ -68,6 +76,9 @@ class StudentMeProfileView(APIView):
                     "bio": profile.bio,
                     "created_at": profile.created_at,
                     "updated_at": profile.updated_at,
+                    # frontend can use these directly
+                    "profile_image": profile.profile_image.url if profile.profile_image else "",
+                    "profile_image_url": request.build_absolute_uri(profile.profile_image.url) if profile.profile_image else "",
                 },
                 status=status.HTTP_200_OK,
             )

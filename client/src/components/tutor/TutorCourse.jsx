@@ -90,8 +90,6 @@ export default function TutorCourse() {
 
           
         </div>
-
-        
       </div>
 
       {loading ? (
@@ -128,9 +126,15 @@ export default function TutorCourse() {
                 cover={
                   <img
                     src={
-                      course.thumbnail
-                        ? `${API_BASE}${course.thumbnail}`
-                        : "https://via.placeholder.com/400x220?text=Course"
+                      course.thumbnail_url
+                        ? course.thumbnail_url.startsWith("http")
+                          ? course.thumbnail_url
+                          : `${API_BASE}${course.thumbnail_url}`
+                        : course.thumbnail
+                          ? course.thumbnail.startsWith("http")
+                            ? course.thumbnail
+                            : `${API_BASE}${course.thumbnail}`
+                          : "https://via.placeholder.com/400x220?text=Course"
                     }
                     alt={course.title}
                     style={{
@@ -181,7 +185,6 @@ export default function TutorCourse() {
                 >
                   {course.duration} Weeks
                 </Text>
-
                 <div
                   style={{
                     marginTop: 12,

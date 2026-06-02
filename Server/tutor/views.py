@@ -16,12 +16,10 @@ from tutor.models import TutorProfile
 
 from student.serializers import StudentCourseCompletionSerializer
 
-
 from django.core.files.storage import default_storage
 from django.utils.text import slugify
 
 import os
-
 
 class TutorProfileMeRetrieveUpdateView(generics.GenericAPIView):
     serializer_class = TutorProfileSerializer
@@ -32,7 +30,7 @@ class TutorProfileMeRetrieveUpdateView(generics.GenericAPIView):
         if not profile:
             profile = TutorProfileSerializer.Meta.model.objects.create(user=request.user, tutor_bio="")
 
-        serializer = self.serializer_class(profile)
+        serializer = self.serializer_class(profile, context={"request": request})
         data = serializer.data
         data["username"] = request.user.username
         return Response(data)
@@ -45,7 +43,7 @@ class TutorProfileMeRetrieveUpdateView(generics.GenericAPIView):
 
     def _update(self, request, partial: bool):
         profile = TutorProfileSerializer.Meta.model.objects.get_or_create(user=request.user, defaults={"tutor_bio": ""})[0]
-        serializer = self.serializer_class(profile, data=request.data, partial=partial)
+        serializer = self.serializer_class(profile, data=request.data, partial=partial, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
         return Response(serializer.data)
@@ -59,7 +57,7 @@ class TutorProfileMeRetrieveUpdateView(generics.GenericAPIView):
                 pass
         profile.profile_image = None
         profile.save(update_fields=["profile_image"])
-        serializer = self.serializer_class(profile)
+        serializer = self.serializer_class(profile, context={"request": request})
         data = serializer.data
         data["username"] = request.user.username
         return Response(data, status=status.HTTP_200_OK)

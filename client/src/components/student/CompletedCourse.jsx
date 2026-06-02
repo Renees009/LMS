@@ -45,7 +45,7 @@ export default function CompletedCourse() {
         Completed Courses
       </Title>
 
-      
+
 
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>

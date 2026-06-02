@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  Form,
   Input,
   Button,
   Select,
@@ -12,10 +11,8 @@ import {
   Divider,
   InputNumber,
 } from "antd";
-import {
-  UploadOutlined,
-  PlusOutlined,
-} from "@ant-design/icons";
+import { UploadOutlined } from "@ant-design/icons";
+import { useForm, Controller } from "react-hook-form";
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -23,15 +20,26 @@ const { TextArea } = Input;
 const API_BASE = "http://127.0.0.1:8000";
 
 export default function AddCourse() {
-  const [form] = Form.useForm();
-  const [lessonCount, setLessonCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const handleLessonCount = (value) => {
-    setLessonCount(value || 0);
-  };
+  const {
+    register,
+    handleSubmit,
+    control,
+    watch,
+    reset,
+    setValue,
+  } = useForm({
+    defaultValues: {
+      number_of_lessons: 0,
+      lessons: [],
+    },
+  });
 
-  const onFinish = async (values) => {
+  const lessonCount = watch("number_of_lessons") || 0;
+  const lessons = watch("lessons") || [];
+
+  const onSubmit = async (values) => {
     try {
       setLoading(true);
 
@@ -42,58 +50,86 @@ export default function AddCourse() {
       formData.append("duration", values.duration);
       formData.append("level", values.level);
       formData.append("description", values.description);
-      formData.append("number_of_lessons", values.number_of_lessons);
+      formData.append(
+        "number_of_lessons",
+        values.number_of_lessons
+      );
 
-      if (values.thumbnail?.file) {
-        formData.append("thumbnail", values.thumbnail.file.originFileObj);
+      if (
+        values.thumbnail &&
+        values.thumbnail.length > 0
+      ) {
+        formData.append(
+          "thumbnail",
+          values.thumbnail[0].originFileObj
+        );
       }
 
-      const lessons = [];
+      const lessonData = [];
 
-      for (let i = 0; i < values.number_of_lessons; i++) {
-        const lesson = {
-          title: values.lessons?.[i]?.title,
-          description: values.lessons?.[i]?.description,
-        };
-
-        lessons.push(lesson);
+      for (
+        let i = 0;
+        i < values.number_of_lessons;
+        i++
+      ) {
+        lessonData.push({
+          title: values.lessons?.[i]?.title || "",
+          description:
+            values.lessons?.[i]?.description || "",
+        });
       }
 
-      formData.append("lessons", JSON.stringify(lessons));
+      formData.append(
+        "lessons",
+        JSON.stringify(lessonData)
+      ); 
 
       values.lessons?.forEach((lesson, index) => {
-        if (lesson.material?.file) {
+        if (
+          lesson?.material &&
+          lesson.material.length > 0
+        ) {
           formData.append(
             `lesson_material_${index}`,
-            lesson.material.file.originFileObj
+            lesson.material[0].originFileObj
           );
         }
 
-        if (lesson.video?.file) {
+        if (
+          lesson?.video &&
+          lesson.video.length > 0
+        ) {
           formData.append(
             `lesson_video_${index}`,
-            lesson.video.file.originFileObj
+            lesson.video[0].originFileObj
           );
         }
-
       });
 
-      const response = await fetch(`${API_BASE}/api/course/create/`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("lms_token")}`,
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        `${API_BASE}/api/course/create/`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem(
+              "lms_token"
+            )}`,
+          },
+          body: formData,
+        }
+      );
 
       const data = await response.json();
 
       if (response.ok) {
-        message.success("Course Added Successfully");
-        form.resetFields();
-        setLessonCount(0);
+        message.success(
+          "Course Added Successfully"
+        );
+        reset();
       } else {
-        message.error(data.error || "Failed to add course");
+        message.error(
+          data.error || "Failed to add course"
+        );
       }
     } catch (error) {
       console.error(error);
@@ -108,220 +144,318 @@ export default function AddCourse() {
       <Card className="shadow-lg rounded-xl">
         <Title level={3}>Add Course</Title>
 
-        <Form
-          layout="vertical"
-          form={form}
-          onFinish={onFinish}
+        <form
+          onSubmit={handleSubmit(onSubmit)}
         >
-          
-          <Form.Item
-            label="Course Thumbnail"
-            name="thumbnail"
-            valuePropName="file"
-          >
-            <Upload beforeUpload={() => false} maxCount={1}>
-              <Button icon={<UploadOutlined />}>
-                Upload Thumbnail
-              </Button>
-            </Upload>
-          </Form.Item>
 
-          
-          <Form.Item
-            label="Course Title"
-            name="title"
-            rules={[
-              {
+          <div style={{ marginBottom: 20 }}>
+            <label>
+              Course Thumbnail
+            </label>
+
+            <Controller
+              name="thumbnail"
+              control={control}
+              render={({ field }) => (
+                <Upload
+                  beforeUpload={() => false}
+                  maxCount={1}
+                  onChange={(info) =>
+                    field.onChange(
+                      info.fileList
+                    )
+                  }
+                >
+                  <Button
+                    icon={
+                      <UploadOutlined />
+                    }
+                  >
+                    Upload Thumbnail
+                  </Button>
+                </Upload>
+              )}
+            />
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label>
+              Course Title
+            </label>
+
+            <Input
+              placeholder="Enter course title"
+              {...register(
+                "title",
+                {
+                  required: true,
+                }
+              )}
+            />
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label>
+              Course Category
+            </label>
+
+            <Controller
+              name="category"
+              control={control}
+              rules={{
                 required: true,
-                message: "Please enter course title",
-              },
-            ]}
-          >
-            <Input placeholder="Enter course title" />
-          </Form.Item>
+              }}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  placeholder="Select Category"
+                >
+                  <Select.Option value="Programming">
+                    Programming
+                  </Select.Option>
 
-          <Form.Item
-            label="Course Category"
-            name="category"
-            rules={[
-              {
+                  <Select.Option value="Web Development">
+                    Web Development
+                  </Select.Option>
+
+                  <Select.Option value="AI">
+                    AI
+                  </Select.Option>
+
+                  <Select.Option value="Others">
+                    Others
+                  </Select.Option>
+                </Select>
+              )}
+            />
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label>
+              Course Duration
+            </label>
+
+            <Input
+              placeholder="10 Hours"
+              {...register(
+                "duration",
+                {
+                  required: true,
+                }
+              )}
+            />
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label>
+              Course Level
+            </label>
+
+            <Controller
+              name="level"
+              control={control}
+              rules={{
                 required: true,
-                message: "Please select category",
-              },
-            ]}
-          >
-            <Select placeholder="Select category">
-              <Select.Option value="Programming">
-                Programming
-              </Select.Option>
+              }}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  placeholder="Select Level"
+                >
+                  <Select.Option value="Beginner">
+                    Beginner
+                  </Select.Option>
 
-              <Select.Option value="Web Development">
-                Web Development
-              </Select.Option>
+                  <Select.Option value="Intermediate">
+                    Intermediate
+                  </Select.Option>
 
-              <Select.Option value="AI">
-                AI
-              </Select.Option>
+                  <Select.Option value="Advanced">
+                    Advanced
+                  </Select.Option>
+                </Select>
+              )}
+            />
+          </div>
 
-              
-              <Select.Option value="Data Science">
-                Others
-              </Select.Option>
-            </Select>
-          </Form.Item>
-            
+          <div style={{ marginBottom: 20 }}>
+            <label>
+              Description
+            </label>
 
-          <Form.Item
-            label="Course Duration"
-            name="duration"
-            rules={[
-              {
-                required: true,
-                message: "Enter course duration",
-              },
-            ]}
-          >
-            <Input placeholder="Example: 10 Hours" />
-          </Form.Item>
-
-          <Form.Item
-            label="Course Level"
-            name="level"
-            rules={[
-              {
-                required: true,
-                message: "Select level",
-              },
-            ]}
-          >
-            <Select placeholder="Select level">
-              <Select.Option value="Beginner">
-                Beginner 
-              </Select.Option>
-
-              <Select.Option value="Intermediate">
-                Intermediate
-              </Select.Option>
-
-              <Select.Option value="Advanced">
-                Advanced
-              </Select.Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            label="Description"
-            name="description"
-            rules={[
-              {
-                required: true,
-                message: "Enter course description",
-              },
-            ]}
-          >
             <TextArea
               rows={4}
-              placeholder="Enter course description"
+              placeholder="Course Description"
+              {...register(
+                "description",
+                {
+                  required: true,
+                }
+              )}
             />
-          </Form.Item>
+          </div>
 
-          {/* Number of Lessons */}
-          <Form.Item
-            label="Number of Lessons"
-            name="number_of_lessons"
-            rules={[
-              {
-                required: true,
-                message: "Enter number of lessons",
-              },
-            ]}
-          >
-            <InputNumber
-              min={1}
-              className="w-full"
-              placeholder="Enter number of lessons"
-              onChange={handleLessonCount}
+          <div style={{ marginBottom: 20 }}>
+            <label>
+              Number of Lessons
+            </label>
+
+            <Controller
+              name="number_of_lessons"
+              control={control}
+              render={({ field }) => (
+                <InputNumber
+                  {...field}
+                  min={1}
+                  style={{
+                    width: "100%",
+                  }}
+                />
+              )}
             />
-          </Form.Item>
+          </div>         
 
-          {Array.from({ length: lessonCount }).map((_, index) => (
+          {Array.from({
+            length: lessonCount,
+          }).map((_, index) => (
             <Card
               key={index}
-              className="mb-5 border rounded-xl"
-              title={`Lesson ${index + 1}`}
+              style={{
+                marginBottom: 20,
+              }}
+              title={`Lesson ${
+                index + 1
+              }`}
             >
-              <Form.Item
-                label="Lesson Title"
-                name={["lessons", index, "title"]}
-                rules={[
-                  {
-                    required: true,
-                    message: "Enter lesson title",
-                  },
-                ]}
+              <div
+                style={{
+                  marginBottom: 16,
+                }}
               >
-                <Input placeholder="Enter lesson title" />
-              </Form.Item>
+                <label>
+                  Lesson Title
+                </label>
 
-              <Form.Item
-                label="Lesson Description"
-                name={["lessons", index, "description"]}
-                rules={[
-                  {
-                    required: true,
-                    message: "Enter lesson description",
-                  },
-                ]}
+                <Input
+                  placeholder="Lesson Title"
+                  {...register(
+                    `lessons.${index}.title`,
+                    {
+                      required: true,
+                    }
+                  )}
+                />
+              </div>
+
+              <div
+                style={{
+                  marginBottom: 16,
+                }}
               >
+                <label>
+                  Lesson Description
+                </label>
+
                 <TextArea
                   rows={3}
-                  placeholder="Enter lesson description"
+                  placeholder="Lesson Description"
+                  {...register(
+                    `lessons.${index}.description`,
+                    {
+                      required: true,
+                    }
+                  )}
                 />
-              </Form.Item>
+              </div>
 
-              {/* Course Material */}
-              <Form.Item
-                label="Course Material"
-                name={["lessons", index, "material"]}
-                valuePropName="file"
+              <div
+                style={{
+                  marginBottom: 16,
+                }}
               >
-                <Upload beforeUpload={() => false} maxCount={1}>
-                  <Button icon={<UploadOutlined />}>
-                    Upload Material
-                  </Button>
-                </Upload>
-              </Form.Item>
+                <label>
+                  Course Material
+                </label>
+
+                <Controller
+                  name={`lessons.${index}.material`}
+                  control={control}
+                  render={({
+                    field,
+                  }) => (
+                    <Upload
+                      beforeUpload={() => false}
+                      maxCount={1}
+                      onChange={(
+                        info
+                      ) =>
+                        field.onChange(
+                          info.fileList
+                        )
+                      }
+                    >
+                      <Button
+                        icon={
+                          <UploadOutlined />
+                        }
+                      >
+                        Upload Material
+                      </Button>
+                    </Upload>
+                  )}
+                />
+              </div>
 
               {/* Video */}
-              <Form.Item
-                label="Video"
-                name={["lessons", index, "video"]}
-                valuePropName="file"
-              >
-                <Upload beforeUpload={() => false} maxCount={1}>
-                  <Button icon={<UploadOutlined />}>
-                    Upload Video
-                  </Button>
-                </Upload>
-              </Form.Item>
+
+              <div>
+                <label>
+                  Video
+                </label>
+
+                <Controller
+                  name={`lessons.${index}.video`}
+                  control={control}
+                  render={({
+                    field,
+                  }) => (
+                    <Upload
+                      beforeUpload={() => false}
+                      maxCount={1}
+                      onChange={(
+                        info
+                      ) =>
+                        field.onChange(
+                          info.fileList
+                        )
+                      }
+                    >
+                      <Button
+                        icon={
+                          <UploadOutlined />
+                        }
+                      >
+                        Upload Video
+                      </Button>
+                    </Upload>
+                  )}
+                />
+              </div>
             </Card>
           ))}
 
-
           <Divider />
 
-          {/* Submit */}
           <Space>
             <Button
               type="primary"
               htmlType="submit"
               loading={loading}
-              
             >
-              Upload course
+              Upload Course
             </Button>
           </Space>
-        </Form>
+        </form>
       </Card>
     </div>
   );

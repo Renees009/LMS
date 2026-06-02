@@ -5,15 +5,30 @@ from tutor.models import TutorCourse
 
 from .models import StudentProfile, StudentCourseEnrollment, StudentCourseCompletion
 
-
 class StudentProfileSerializer(serializers.ModelSerializer):
+    profile_image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = StudentProfile
         fields = [
             "id",
             "user",
             "student_name",
+            "profile_image",
+            "profile_image_url",
         ]
+        read_only_fields = ["user"]
+
+    def get_profile_image_url(self, obj):
+        if not obj.profile_image:
+            return ""
+        try:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.profile_image.url)
+        except Exception:
+            pass
+        return obj.profile_image.url
 
 
 class StudentCourseEnrollmentSerializer(serializers.ModelSerializer):
@@ -53,6 +68,13 @@ class StudentCourseCompletionSerializer(serializers.ModelSerializer):
     # (so completed courses render course details correctly.)
     title = serializers.CharField(source="enrollment.course.title", read_only=True)
     thumbnail_url = serializers.CharField(source="enrollment.course.thumbnail_url", read_only=True, allow_blank=True)
+
+    # Some frontend cards expect `course_thumbnail_url`.
+    course_thumbnail_url = serializers.CharField(
+        source="enrollment.course.thumbnail_url",
+        read_only=True,
+        allow_blank=True,
+    )
     category = serializers.CharField(source="enrollment.course.category", read_only=True)
     duration = serializers.IntegerField(source="enrollment.course.duration", read_only=True)
     level = serializers.CharField(source="enrollment.course.level", read_only=True)
