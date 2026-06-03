@@ -75,12 +75,13 @@ class StudentCourseCompletionSerializer(serializers.ModelSerializer):
     title = serializers.CharField(source="enrollment.course.title", read_only=True)
     thumbnail_url = serializers.CharField(source="enrollment.course.thumbnail_url", read_only=True, allow_blank=True)
 
-
     course_thumbnail_url = serializers.CharField(
         source="enrollment.course.thumbnail_url",
         read_only=True,
         allow_blank=True,
     )
+
+
     category = serializers.CharField(source="enrollment.course.category", read_only=True)
     duration = serializers.IntegerField(source="enrollment.course.duration", read_only=True)
     level = serializers.CharField(source="enrollment.course.level", read_only=True)
@@ -96,6 +97,7 @@ class StudentCourseCompletionSerializer(serializers.ModelSerializer):
             "student_name",
             "title",
             "thumbnail_url",
+            "course_thumbnail_url",
             "category",
             "duration",
             "level",
