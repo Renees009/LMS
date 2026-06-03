@@ -3,6 +3,8 @@ import {
   BookOutlined,
   CheckCircleOutlined,
   DownloadOutlined,
+  UserOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
@@ -34,6 +36,7 @@ export default function CourseCard({
     course_duration,
     course_level,
     course_description,
+    enrollment_count,
   } = course;
 
   const displayTitle = title || course_title || "Untitled";
@@ -96,15 +99,16 @@ export default function CourseCard({
       hoverable
       style={{
         width: "100%",
-        height: "100%",
-        borderRadius: 12,
-        display: "flex",
-        flexDirection: "column",
+        height: "auto",
+        borderRadius: 10,
+        overflow: "hidden",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+        transition: "all 0.3s ease",
       }}
-      bodyStyle={{
-        display: "flex",
-        flexDirection: "column",
-        flex: 1,
+      styles={{
+        body: {
+          padding: "8px",
+        }
       }}
       cover={
         imageUrl ? (
@@ -112,14 +116,15 @@ export default function CourseCard({
             alt={displayTitle}
             src={imageUrl}
             style={{
-              height: 200,
+              height: 90,
               objectFit: "cover",
+              width: "100%",
             }}
           />
         ) : (
           <div
             style={{
-              height: 200,
+              height: 90,
               background: "#f3f4f6",
             }}
           />
@@ -130,150 +135,147 @@ export default function CourseCard({
         style={{
           display: "flex",
           flexDirection: "column",
-          height: "100%",
-          minHeight: 260,
+          gap: 4,
         }}
       >
-        <Space
-          direction="vertical"
-          size={10}
+        <Text
+          strong
           style={{
-            width: "100%",
-            flex: 1,
+            fontSize: 12,
+            color: "#1a1a1a",
+            lineHeight: 1.3,
+            height: 31,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
           }}
         >
-          <Text
-            strong
-            style={{
-              fontSize: 18,
-              color: "#111827",
-            }}
-          >
-            {displayTitle}
+          {displayTitle}
+        </Text>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+          <UserOutlined style={{ color: "#0369a1", fontSize: 10 }} />
+          <Text style={{ color: "#0369a1", fontSize: 10, fontWeight: 500 }}>
+             {course.enrollment_count ?? 0} Students Enrolled
           </Text>
-          <Text strong style={{ color: "#0369a1" }}>
-                Students Enrolled : {course.enrollment_count}
-              </Text>
-          <Space wrap>
-            {resolvedCategory && (
-              <Tag color="blue">{resolvedCategory}</Tag>
-            )}
+        </div>
 
-            {resolvedLevel && (
-              <Tag color="purple">{resolvedLevel}</Tag>
-            )}
-
-            {resolvedDuration !== undefined &&
-              resolvedDuration !== null && (
-                <Tag color="green">
-                  {resolvedDuration} mins
-                </Tag>
-              )}
-          </Space>
-
-          {enrollmentMeta?.status && (
-            <Tag
-              color={
-                enrollmentMeta.status === "completed"
-                  ? "green"
-                  : "blue"
-              }
-            >
-              {enrollmentMeta.status}
+        <Space wrap size={4}>
+          {resolvedCategory && (
+            <Tag color="blue" style={{ margin: 0, fontSize: 9, padding: "0 5px", lineHeight: "18px", borderRadius: 4 }}>
+              {resolvedCategory}
             </Tag>
           )}
 
-          {completionMeta?.completed_date && (
-            <Text type="secondary">
-              Completed on: {completionMeta.completed_date}
-            </Text>
+          {resolvedLevel && (
+            <Tag color="purple" style={{ margin: 0, fontSize: 9, padding: "0 5px", lineHeight: "18px", borderRadius: 4 }}>
+              {resolvedLevel}
+            </Tag>
           )}
 
-          {enrollmentMeta?.enrolled_at && (
-            <Text type="secondary">
-              Enrolled on: {enrollmentMeta.enrolled_at}
-            </Text>
-          )}
-
-          {completionMeta?.tutor_details && (
-            <Text type="secondary">
-              Tutor: {completionMeta.tutor_details}
-            </Text>
-          )}
-
-          {progressMeta?.progress_percentage !== undefined && (
-            <Text>
-              Progress: {progressMeta.progress_percentage}% (
-              {progressMeta.completed_lessons}/
-              {progressMeta.total_lessons})
-            </Text>
-          )}
-
-          {resolvedDescription && (
-            <Text
-              type="secondary"
-              style={{
-                display: "block",
-              }}
-            >
-              {resolvedDescription}
-            </Text>
+          {resolvedDuration !== undefined && resolvedDuration !== null && (
+            <Tag color="green" style={{ margin: 0, fontSize: 9, padding: "0 5px", lineHeight: "18px", borderRadius: 4 }}>
+              <ClockCircleOutlined style={{ fontSize: 8, marginRight: 2 }} />
+              {resolvedDuration} Hours
+            </Tag>
           )}
         </Space>
 
-        
-        <div
-          style={{
-            marginTop: "auto",
-            paddingTop: 16,
-          }}
-        >
+        {enrollmentMeta?.status && !isCompleted && (
+          <Tag
+            color="success"
+            style={{ 
+              margin: 0, 
+              fontSize: 9, 
+              padding: "0 5px", 
+              lineHeight: "18px", 
+              borderRadius: 4, 
+              width: "fit-content",
+              backgroundColor: "#389e0d",
+              color: "#ffffff",
+              border: "none",
+              fontWeight: 500,
+            }}
+          >
+            ✓ {enrollmentMeta.status}
+          </Tag>
+        )}
+        {progressMeta?.progress_percentage !== undefined && isEnrolled && (
+          <div style={{ marginTop: 2 }}>
+            <Text style={{ fontSize: 9, color: "#666" }}>
+              Progress: {progressMeta.progress_percentage}%
+            </Text>
+            <div style={{
+              height: 2,
+              background: "#e5e7eb",
+              borderRadius: 2,
+              marginTop: 2,
+              overflow: "hidden"
+            }}>
+              <div style={{
+                width: `${progressMeta.progress_percentage}%`,
+                height: "100%",
+                background: "#1890ff",
+                borderRadius: 2
+              }} />
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div style={{ marginTop: 6 }}>
           {isCompleted ? (
             <Button
               type="primary"
               icon={<DownloadOutlined />}
               block
-              size="large"
+              size="small"
               style={{
-                height: 45,
-                borderRadius: 8,
+                height: 26,
+                borderRadius: 6,
+                fontSize: 10,
+                fontWeight: 500,
               }}
               onClick={handleDownloadCertificate}
             >
-              Download Certificate
+              Certificate
             </Button>
           ) : isEnrolled ? (
-            <Space
-              direction="vertical"
-              style={{
-                width: "100%",
-              }}
-            >
+            <Space direction="vertical" size={4} style={{ width: "100%" }}>
               <Button
                 block
                 icon={<CheckCircleOutlined />}
                 disabled
-                size="large"
+                size="small"
                 style={{
-                  height: 45,
-                  borderRadius: 8,
+                  height: 26,
+                  borderRadius: 6,
+                  fontSize: 10,
+                  fontWeight: 600,
+                  backgroundColor: "#389e0d",
+                  color: "#ffffff",
+                  border: "none",
+                  cursor: "default",
                 }}
               >
-                Enrolled
+                ✓ Enrolled
               </Button>
-
               <Button
                 type="primary"
                 icon={<BookOutlined />}
                 block
-                size="large"
+                size="small"
                 style={{
-                  height: 45,
-                  borderRadius: 8,
+                  height: 26,
+                  borderRadius: 6,
+                  fontSize: 10,
+                  fontWeight: 500,
                 }}
                 onClick={handleContinueLearning}
               >
-                Continue Learning
+                Continue
               </Button>
             </Space>
           ) : (
@@ -281,14 +283,16 @@ export default function CourseCard({
               type="primary"
               icon={<BookOutlined />}
               block
-              size="large"
+              size="small"
               style={{
-                height: 45,
-                borderRadius: 8,
+                height: 26,
+                borderRadius: 6,
+                fontSize: 10,
+                fontWeight: 500,
               }}
               onClick={handleEnroll}
             >
-              Enroll Now
+              Enroll
             </Button>
           )}
         </div>

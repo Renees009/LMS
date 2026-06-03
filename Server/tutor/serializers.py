@@ -67,8 +67,11 @@ class TutorCourseSerializer(serializers.ModelSerializer):
     level = serializers.CharField(source="course.level", read_only=True)
     description = serializers.CharField(source="course.description", read_only=True)
 
+    enrollment_count = serializers.SerializerMethodField()
+
     thumbnail_url = serializers.SerializerMethodField()
     thumbnail = serializers.SerializerMethodField()
+
 
     def get_thumbnail_url(self, obj):
         try:
@@ -91,6 +94,20 @@ class TutorCourseSerializer(serializers.ModelSerializer):
         except Exception:
             return ""
 
+    def get_enrollment_count(self, obj):
+        
+        try:
+
+            from student.models import StudentCourseEnrollment
+            return (
+                StudentCourseEnrollment.objects.filter(
+                    course=obj.course,
+                ).count()
+            )
+
+        except Exception:
+            return 0
+
     class Meta:
         model = TutorCourse
         fields = [
@@ -100,10 +117,12 @@ class TutorCourseSerializer(serializers.ModelSerializer):
             "duration",
             "level",
             "description",
+            "enrollment_count",
             "thumbnail",
             "thumbnail_url",
             "start_date",
             "end_date",
             "notes",
         ]
+
 

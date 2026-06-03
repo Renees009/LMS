@@ -222,13 +222,34 @@ export default function SignUp() {
                 message: "Enter password",
               },
               {
-                min: 6,
-                message: "Password must be at least 6 characters",
+                min: 8,
+                message: "Password must be at least 8 characters",
+              },
+              {
+                validator: (_, value) => {
+                  if (!value) return Promise.resolve();
+
+                  const hasUppercase = /[A-Z]/.test(value);
+                  const hasLowercase = /[a-z]/.test(value);
+                  const hasDigit = /\d/.test(value);
+                  const hasSpecial = /[^A-Za-z0-9]/.test(value);
+
+                  if (hasUppercase && hasLowercase && hasDigit && hasSpecial) {
+                    return Promise.resolve();
+                  }
+
+                  return Promise.reject(
+                    new Error(
+                      "Password must include at least 1 uppercase, 1 lowercase, 1 digit, and 1 special character"
+                    )
+                  );
+                },
               },
             ]}
           >
-            <Input.Password placeholder="Enter password (min 6 characters)" />
+            <Input.Password placeholder="Enter password" />
           </Form.Item>
+
 
           <Form.Item
             label="Email"

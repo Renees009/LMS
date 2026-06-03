@@ -37,6 +37,12 @@ class StudentCourseEnrollmentSerializer(serializers.ModelSerializer):
     course_duration = serializers.IntegerField(source="course.duration", read_only=True)
     course_level = serializers.CharField(source="course.level", read_only=True)
     course_description = serializers.CharField(source="course.description", read_only=True)
+    enrollment_count = serializers.SerializerMethodField()
+
+    def get_enrollment_count(self, obj):
+
+        return StudentCourseEnrollment.objects.filter(course=obj.course).count()
+
 
     class Meta:
         model = StudentCourseEnrollment
@@ -51,11 +57,13 @@ class StudentCourseEnrollmentSerializer(serializers.ModelSerializer):
             "course_description",
             "status",
             "enrolled_at",
+            "enrollment_count",
         ]
 
 
+
 class StudentCourseCompletionSerializer(serializers.ModelSerializer):
-    # Keep student name/tutor info
+
     student_name = serializers.CharField(source="student_profile.student_name", read_only=True)
 
     tutor_details = serializers.CharField(source="tutor_course.tutor_profile.tutor_name", read_only=True)
@@ -64,12 +72,10 @@ class StudentCourseCompletionSerializer(serializers.ModelSerializer):
     start_date = serializers.DateField(source="enrollment.enrolled_at", read_only=True)
     completed_date = serializers.DateField(source="completed_at", read_only=True)
 
-    # Expose course fields with the SAME names the UI CourseCard expects
-    # (so completed courses render course details correctly.)
     title = serializers.CharField(source="enrollment.course.title", read_only=True)
     thumbnail_url = serializers.CharField(source="enrollment.course.thumbnail_url", read_only=True, allow_blank=True)
 
-    # Some frontend cards expect `course_thumbnail_url`.
+
     course_thumbnail_url = serializers.CharField(
         source="enrollment.course.thumbnail_url",
         read_only=True,
@@ -88,18 +94,15 @@ class StudentCourseCompletionSerializer(serializers.ModelSerializer):
             "enrollment",
             "tutor_course",
             "student_name",
-            # UI-consumable course fields
             "title",
             "thumbnail_url",
             "category",
             "duration",
             "level",
             "description",
-            # Completion fields
             "start_date",
             "completed_date",
             "completed_at",
-            # Tutor fields
             "tutor_details",
             "tutor_id",
         ]

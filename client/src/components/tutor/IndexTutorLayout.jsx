@@ -34,16 +34,7 @@ export default function TutorLayout() {
       icon: <BookOutlined />,
       label: "My Courses",
     },
-    {
-      key: "/tutor/manage-lessons",
-      icon: <BookOutlined />,
-      label: "Manage Lessons",
-    },
-    {
-      key: "/tutor/enrollments",
-      icon: <BookOutlined />,
-      label: "View Enrollments",
-    },
+
     {
       key: "/tutor/add-course",
       icon: <PlusCircleOutlined />,

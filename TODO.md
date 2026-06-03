@@ -1,16 +1,10 @@
-# TODO - Fix profile/tutor thumbnail images not displaying
+# TODO
 
-- [x] Update backend serializers to return `profile_image_url` as an absolute URL using `request.build_absolute_uri(...)`.
-  - [x] Server/student/serializers.py
-  - [x] Server/tutor/serializers.py
+## Password validation update (Signup)
+- [x] Update client signup password rules in `client/src/components/authentication/SignUp.jsx`
+- [x] Update server signup password rules in `Server/auth/serializers.py` (min 8 + regex requirements)
+- [x] Sanity check signup flow with example passwords
 
-- [x] Update Server/student/views.py to include `profile_image_url` (and keep `profile_image` fallback).
-
-- [x] Update frontend components to use `profile_image_url` fallback to `profile_image`.
-  - [x] client/src/components/student/StudentProfile.jsx
-  - [x] client/src/components/tutor/TutorProfile.jsx
-
-- [x] Run backend + frontend and verify images render.
 
 
 

@@ -7,13 +7,13 @@ class SignupSerializer(serializers.Serializer):
     ROLE_TUTOR = "tutor"
 
     username = serializers.CharField()
-    password = serializers.CharField(write_only=True, min_length=6)
+    password = serializers.CharField(write_only=True, min_length=8)
     email = serializers.EmailField()
     role = serializers.ChoiceField(choices=[(ROLE_STUDENT, ROLE_STUDENT), (ROLE_TUTOR, ROLE_TUTOR)])
 
- 
     fullName = serializers.CharField(required=False, allow_blank=True)
     phone = serializers.CharField(required=False, allow_blank=True)
+
 
     tutorName = serializers.CharField(required=False, allow_blank=True)
     specialization = serializers.CharField(required=False, allow_blank=True)
@@ -24,10 +24,28 @@ class SignupSerializer(serializers.Serializer):
             raise serializers.ValidationError("Username already exists")
         return value
 
+    def validate_password(self, value):
+
+        if len(value) < 8:
+            raise serializers.ValidationError("Password must be at least 8 characters")
+
+        has_upper = any(c.isupper() for c in value)
+        has_lower = any(c.islower() for c in value)
+        has_digit = any(c.isdigit() for c in value)
+        has_special = any((not c.isalnum()) for c in value)
+
+        if not (has_upper and has_lower and has_digit and has_special):
+            raise serializers.ValidationError(
+                "Password must include at least 1 uppercase, 1 lowercase, 1 digit, and 1 special character"
+            )
+
+        return value
+
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("Email already registered")
         return value
+
 
 
 class LoginSerializer(serializers.Serializer):
