@@ -9,7 +9,7 @@ import {
   Button,
   message,
 } from "antd";
-import { BookOutlined, UserOutlined, ClockCircleOutlined } from "@ant-design/icons";
+import { BookOutlined, UserOutlined, ClockCircleOutlined, PictureOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
@@ -58,6 +58,60 @@ export default function TutorCourse() {
 
   const handleManageCourse = (courseId) => {
     navigate(`/tutor/course/${courseId}`);
+  };
+
+  const getThumbnailUrl = (course) => {
+    if (course.thumbnail_url) {
+      return course.thumbnail_url.startsWith("http")
+        ? course.thumbnail_url
+        : `${API_BASE}${course.thumbnail_url}`;
+    }
+    if (course.thumbnail) {
+      return course.thumbnail.startsWith("http")
+        ? course.thumbnail
+        : `${API_BASE}${course.thumbnail}`;
+    }
+    return null;
+  };
+
+  const CourseThumbnail = ({ course }) => {
+    const thumbnailUrl = getThumbnailUrl(course);
+    const [imageError, setImageError] = useState(false);
+
+    if (!thumbnailUrl || imageError) {
+      return (
+        <div
+          style={{
+            height: 100,
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "white",
+            gap: 8,
+          }}
+        >
+          <PictureOutlined style={{ fontSize: 32, opacity: 0.7 }} />
+          <Text style={{ color: "white", fontSize: 12, opacity: 0.8 }}>
+            No Image Available
+          </Text>
+        </div>
+      );
+    }
+
+    return (
+      <img
+        src={thumbnailUrl}
+        alt={course.title}
+        style={{
+          height: 100,
+          objectFit: "cover",
+          width: "100%",
+        }}
+        onError={() => setImageError(true)}
+      />
+    );
   };
 
   return (
@@ -116,28 +170,7 @@ export default function TutorCourse() {
                     padding: "10px",
                   },
                 }}
-
-                cover={
-                  <img
-                    src={
-                      course.thumbnail_url
-                        ? course.thumbnail_url.startsWith("http")
-                          ? course.thumbnail_url
-                          : `${API_BASE}${course.thumbnail_url}`
-                        : course.thumbnail
-                          ? course.thumbnail.startsWith("http")
-                            ? course.thumbnail
-                            : `${API_BASE}${course.thumbnail}`
-                          : "https://via.placeholder.com/400x220?text=Course"
-                    }
-                    alt={course.title}
-                    style={{ 
-                      height: 100, 
-                      objectFit: "cover",
-                      width: "100%",
-                    }}
-                  />
-                }
+                cover={<CourseThumbnail course={course} />}
               >
                 <Title
                   level={5}

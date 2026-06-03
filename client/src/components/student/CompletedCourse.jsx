@@ -58,7 +58,6 @@ export default function CompletedCourse() {
           margin: "0 auto",
         }}
       >
-        {/* Header Section */}
         <div
           style={{
             display: "flex",

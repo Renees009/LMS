@@ -69,7 +69,6 @@ export default function StudentProfile() {
       const token = localStorage.getItem("lms_token");
 
       const formData = new FormData();
-      // Keep existing form values so backend updates don’t wipe other fields
       const values = form.getFieldsValue();
       formData.append("student_name", values.name);
       if (values.email !== undefined) formData.append("email", values.email);
@@ -148,7 +147,7 @@ export default function StudentProfile() {
         }}
       >
         <Title level={2} style={{ textAlign: "center", color: "#1e293b" }}>
-          Student Profile
+          YOUR PROFILE
         </Title>
 
         {userName ? (
@@ -168,22 +167,20 @@ export default function StudentProfile() {
           <Upload
             showUploadList={false}
             beforeUpload={(file) => {
-              // beforeUpload is the reliable place to capture the file in AntD
+     
               if (!file) return false;
               selectedFileRef.current = file;
               const previewUrl = URL.createObjectURL(file);
               setProfileImage(previewUrl);
-              // upload immediately
+         
               handleUpload({ file });
-              return false; // prevent auto-upload; we control it
+              return false; 
             }}
           >
             <Button icon={<UploadOutlined />} style={{ marginTop: "15px" }}>
               Change Photo
             </Button>
           </Upload>
-
-          {/* Auto-upload when a new photo is selected */}
 
         </div>
 

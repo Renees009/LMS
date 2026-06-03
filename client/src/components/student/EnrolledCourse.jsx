@@ -94,7 +94,6 @@ export default function EnrolledCourse() {
           </div>
         ) : (
           <>
-            {/* Results count */}
             <div
               style={{
                 marginBottom: 16,
