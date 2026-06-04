@@ -18,13 +18,14 @@ import TutorLayout from "./components/tutor/IndexTutorLayout";
 import ManageLessons from "./components/tutor/ManageLessons";
 import ViewEnrollments from "./components/tutor/ViewEnrollments";
 
+import CourseDetails from "./components/course/CourseDetails";
+import QuizPage from "./components/course/Quiz";
 
 import { getRole, getToken } from "./auth/auth";
 
 function RequireAuth({ children, role }) {
   const token = getToken();
   const userRole = getRole();
-
 
   if (!token) return <Navigate to="/signin" replace />;
   if (role && userRole !== role)
@@ -42,11 +43,28 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-
-     
+ 
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
 
+        <Route
+          path="/course/:courseId"
+          element={
+            <RequireAuth>
+              <CourseDetails />
+            </RequireAuth>
+          }
+        />
+        
+        <Route
+          path="/quiz/:courseId"
+          element={
+            <RequireAuth>
+              <QuizPage />
+            </RequireAuth>
+          }
+        />
+        <Route path="/course/:courseId" element={<CourseDetails />} />
         <Route
           path="/student"
           element={
@@ -80,7 +98,7 @@ export default function App() {
           <Route path="settings" element={<TutorSettings />} />
         </Route>
 
-          
+       
         <Route path="/" element={<Navigate to="/signin" replace />} />
       </Routes>
     </BrowserRouter>

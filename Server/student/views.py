@@ -60,7 +60,6 @@ class StudentMeProfileView(APIView):
             if "bio" in request.data:
                 profile.bio = request.data["bio"]
 
-            # Handle profile image upload
             profile_image = request.FILES.get("profile_image")
             if profile_image:
                 profile.profile_image = profile_image
@@ -76,7 +75,6 @@ class StudentMeProfileView(APIView):
                     "bio": profile.bio,
                     "created_at": profile.created_at,
                     "updated_at": profile.updated_at,
-                    # frontend can use these directly
                     "profile_image": profile.profile_image.url if profile.profile_image else "",
                     "profile_image_url": request.build_absolute_uri(profile.profile_image.url) if profile.profile_image else "",
                 },

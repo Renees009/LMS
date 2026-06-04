@@ -29,7 +29,6 @@ export default function CourseCard({
   useEffect(() => {
     const fetchUserData = async () => {
       try {
- 
         const storedUser = localStorage.getItem("user");
         if (storedUser) {
           const parsedUser = JSON.parse(storedUser);
@@ -79,7 +78,6 @@ export default function CourseCard({
           setUserData(userInfo);
           localStorage.setItem("user", JSON.stringify(userInfo));
         } else {
-
           setUserData({
             full_name: "Student",
             username: "student",
@@ -101,29 +99,60 @@ export default function CourseCard({
 
   if (!course) return null;
 
-  const {
-    id,
-    title,
-    thumbnail_url,
-    thumbnail,
-    category,
-    duration,
-    level,
-    course_title,
-    course_category,
-    course_duration,
-    course_level,
-    enrollment_count,
-  } = course;
+  const getCourseId = () => {
+    console.log("[CourseCard] Course object:", course);
+    
+    if (course.id) {
+      console.log("[CourseCard] Using course.id:", course.id);
+      return course.id;
+    }
+    
+    if (course.course && course.course.id) {
+      console.log("[CourseCard] Using course.course.id:", course.course.id);
+      return course.course.id;
+    }
+    
+    if (course.course_id) {
+      console.log("[CourseCard] Using course.course_id:", course.course_id);
+      return course.course_id;
+    }
+    
+    if (enrollmentMeta && enrollmentMeta.course_id) {
+      console.log("[CourseCard] Using enrollmentMeta.course_id:", enrollmentMeta.course_id);
+      return enrollmentMeta.course_id;
+    }
+    
+    if (completionMeta && completionMeta.course_id) {
+      console.log("[CourseCard] Using completionMeta.course_id:", completionMeta.course_id);
+      return completionMeta.course_id;
+    }
+    
+    console.error("[CourseCard] Could not find course ID in:", { course, enrollmentMeta, completionMeta });
+    return null;
+  };
 
-  const displayTitle = title || course_title || "Untitled";
-  const resolvedCategory = category || course_category;
-  const resolvedDuration = duration ?? course_duration;
-  const resolvedLevel = level || course_level;
+  const actualCourseId = getCourseId();
 
-  const imageUrl =
-    thumbnail_url ||
-    (thumbnail ? `${API_BASE}${thumbnail}` : null);
+  const getCourseDetail = (field) => {
+    if (course[field]) return course[field];
+    if (course.course && course.course[field]) return course.course[field];
+    return null;
+  };
+
+  const displayTitle = getCourseDetail("title") || getCourseDetail("course_title") || "Untitled";
+  const resolvedCategory = getCourseDetail("category") || getCourseDetail("course_category");
+  const resolvedDuration = getCourseDetail("duration") || getCourseDetail("course_duration");
+  const resolvedLevel = getCourseDetail("level") || getCourseDetail("course_level");
+  
+  const getThumbnailUrl = () => {
+    const thumbUrl = getCourseDetail("thumbnail_url") || getCourseDetail("thumbnail");
+    if (thumbUrl) {
+      return thumbUrl.startsWith("http") ? thumbUrl : `${API_BASE}${thumbUrl}`;
+    }
+    return null;
+  };
+  
+  const imageUrl = getThumbnailUrl();
 
   const isCourseCompleted =
     completionMeta?.completed_date ||
@@ -136,35 +165,49 @@ export default function CourseCard({
 
   const handleEnroll = async () => {
     setLoading(true);
+    
+    if (!actualCourseId) {
+      message.error("Invalid course ID");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/api/courses/${id}/enroll/`, {
+      const res = await fetch(`${API_BASE}/api/me/enrollments/`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("lms_token")}`,
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({ course: actualCourseId }),
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        message.error(errorData.message || "Enrollment failed");
+        
+        navigate(`/course/${actualCourseId}`);
+        setLoading(false);
         return;
       }
 
-      message.success("Successfully enrolled!");
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      message.success("Successfully enrolled! Redirecting to course...");
+      navigate(`/course/${actualCourseId}`);
     } catch (error) {
       console.error(error);
-      message.error("Enrollment failed");
-    } finally {
+   
+      navigate(`/course/${actualCourseId}`);
       setLoading(false);
     }
   };
 
   const handleContinueLearning = () => {
-    navigate(`/course/${id}/learn`);
+    console.log("[CourseCard] Continue button clicked - Course ID:", actualCourseId);
+    
+    if (!actualCourseId) {
+      message.error("Course not found. Please try again.");
+      return;
+    }
+
+    navigate(`/course/${actualCourseId}`);
   };
 
   const handleDownloadCertificate = () => {
@@ -174,6 +217,18 @@ export default function CourseCard({
     }
     setShowCertificate(true);
   };
+
+  const getEnrollmentCount = () => {
+    if (course.enrollment_count !== undefined && course.enrollment_count !== null) {
+      return course.enrollment_count;
+    }
+    if (course.course?.enrollment_count !== undefined && course.course?.enrollment_count !== null) {
+      return course.course.enrollment_count;
+    }
+    return 0;
+  };
+
+  const enrollmentCount = getEnrollmentCount();
 
   return (
     <>
@@ -250,7 +305,7 @@ export default function CourseCard({
           <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
             <UserOutlined style={{ color: "#0369a1", fontSize: 10 }} />
             <Text style={{ color: "#0369a1", fontSize: 10, fontWeight: 500 }}>
-              {enrollment_count ?? 0} Enrolled
+              {enrollmentCount} Enrolled
             </Text>
           </div>
 
@@ -375,7 +430,6 @@ export default function CourseCard({
         </div>
       </Card>
 
-  
       {showCertificate && userData && (
         <CertificateGenerator
           visible={showCertificate}
