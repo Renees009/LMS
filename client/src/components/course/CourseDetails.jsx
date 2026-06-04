@@ -43,6 +43,7 @@ export default function CourseDetails() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
+  const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [enrollmentStatus, setEnrollmentStatus] = useState(null);
   const [progress, setProgress] = useState(0);
@@ -52,33 +53,31 @@ export default function CourseDetails() {
   const [isStartingLearning, setIsStartingLearning] = useState(false);
   const [isStartingQuiz, setIsStartingQuiz] = useState(false);
 
+
   useEffect(() => {
-    fetchCourseDetails();
-    checkEnrollmentAndProgress();
-  }, [courseId]);
+      fetchCourseDetails();
+      fetchCourseLessons();
+      checkEnrollmentAndProgress();
+    }, [courseId]);
 
   const fetchCourseDetails = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("lms_token");
-      
-      if (!token) {
-        message.error("Please login to view course details");
-        navigate("/signin");
-        return;
-      }
 
       const res = await fetch(`${API_BASE}/api/courses/${courseId}/`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
           "Content-Type": "application/json",
         },
       });
       
       if (res.ok) {
         const data = await res.json();
-        console.log("Course data:", data);
         setCourse(data);
+        if (Array.isArray(data.lessons)) {
+          setLessons(data.lessons);
+        }
       } else if (res.status === 404) {
         message.error("Course not found");
         navigate("/student/explore");
@@ -91,6 +90,34 @@ export default function CourseDetails() {
       message.error("Network error - Failed to connect to server");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCourseLessons = async () => {
+    try {
+      const token = localStorage.getItem("lms_token");
+
+      const headers = token
+        ? { Authorization: `Bearer ${token}` }
+        : {};
+
+      const res = await fetch(`${API_BASE}/api/courses/${courseId}/lessons/`, {
+        headers,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setLessons(Array.isArray(data) ? data : []);
+      } else {
+        const txt = await res.text().catch(() => "");
+        console.error("Failed to fetch lessons", res.status, txt);
+        setLessons([]);
+        message.error("Failed to load lessons for this course.");
+      }
+    } catch (error) {
+      console.error("Error fetching course lessons:", error);
+      setLessons([]);
+      message.error("Network error while loading lessons.");
     }
   };
 
@@ -110,14 +137,46 @@ export default function CourseDetails() {
         const enrolled = data.find((e) => e.course?.id === parseInt(courseId));
         setEnrollmentStatus(enrolled ? "enrolled" : "not_enrolled");
         
-        if (enrolled && enrolled.progress) {
+        if (enrolled) {
           setProgress(enrolled.progress || 0);
-          setCompletedLessons(enrolled.completed_lessons || []);
+          // Fetch detailed progress including completed lesson IDs
+          await fetchCourseProgress();
         }
       }
     } catch (error) {
       console.error("Error checking enrollment:", error);
     }
+  };
+
+  const fetchCourseProgress = async () => {
+    try {
+      const token = localStorage.getItem("lms_token");
+      if (!token) return;
+
+      const res = await fetch(`${API_BASE}/api/courses/progress/${courseId}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setProgress(Math.round(data.progress_percentage) || 0);
+        setCompletedLessons(data.completed_lesson_ids || []);
+      }
+    } catch (error) {
+      console.error("Error fetching course progress:", error);
+    }
+  };
+
+  const confirmEnrollmentAndEnroll = () => {
+    Modal.confirm({
+      title: "Confirm Enrollment",
+      content: "Are you sure you want to enroll in this course?",
+      okText: "Yes",
+      cancelText: "No",
+      onOk: () => handleEnroll(),
+    });
   };
 
   const handleEnroll = async () => {
@@ -131,32 +190,43 @@ export default function CourseDetails() {
         return;
       }
 
-      console.log("Enrolling in course:", courseId);
-      
-      const res = await fetch(`${API_BASE}/api/courses/${courseId}/enroll/`, {
+      // Check if already enrolled
+      if (enrollmentStatus === "enrolled") {
+        message.info("You are already enrolled in this course.");
+        setEnrolling(false);
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/me/enrollments/`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({ course: parseInt(courseId) }),
       });
 
-      console.log("Enrollment response status:", res.status);
-      const data = await res.json().catch(() => ({}));
-      console.log("Enrollment response data:", data);
-
       if (res.ok) {
-        message.success("Successfully enrolled in the course!");
+        message.success("Successfully enrolled.");
         setEnrollmentStatus("enrolled");
-     
+        setProgress(0);
+        setCompletedLessons([]);
+        await fetchCourseDetails();
+        await fetchCourseLessons();
+        await checkEnrollmentAndProgress();
+        await fetchCourseProgress();
+      } else if (res.status === 400 || res.status === 409) {
+        // Already enrolled - update state
+        message.info("You are already enrolled in this course.");
+        setEnrollmentStatus("enrolled");
         await checkEnrollmentAndProgress();
       } else {
-    
-        navigate(`/course/${courseId}`);
+        const errorData = await res.json().catch(() => ({}));
+        message.error(errorData.error || "Enrollment failed. Please try again.");
       }
     } catch (error) {
       console.error("Error enrolling:", error);
-
+      message.error("Network error - Failed to enroll");
     } finally {
       setEnrolling(false);
     }
@@ -227,45 +297,49 @@ export default function CourseDetails() {
   };
 
   const handleLessonComplete = async (lessonId) => {
+    if (enrollmentStatus !== "enrolled") {
+      Modal.confirm({
+        title: "Enrollment Required",
+        content: "Please enroll in the course to mark lessons as complete.",
+        okText: "Enroll Now",
+        cancelText: "Cancel",
+        onOk: handleEnroll,
+      });
+      return;
+    }
+
     if (completedLessons.includes(lessonId)) return;
-    
+
     const newCompletedLessons = [...completedLessons, lessonId];
     setCompletedLessons(newCompletedLessons);
-    
+
     const totalLessons = course?.lessons?.length || 1;
     const newProgress = Math.min(100, Math.floor((newCompletedLessons.length / totalLessons) * 100));
     setProgress(newProgress);
-    
+
     message.success(`Lesson completed! Progress: ${newProgress}%`);
 
     try {
-      await fetch(`${API_BASE}/api/courses/${courseId}/update-progress/`, {
+      await fetch(`${API_BASE}/api/courses/lessons/complete/`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("lms_token")}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          completed_lessons: newCompletedLessons,
-          progress: newProgress,
+          lesson: lessonId,
         }),
       });
+      // Refresh progress from server after lesson completion is recorded
+      await fetchCourseProgress();
     } catch (error) {
       console.error("Error updating progress:", error);
     }
   };
 
   const handleAccessContent = (contentType) => {
-    if (enrollmentStatus !== "enrolled") {
-      Modal.confirm({
-        title: "Access Restricted",
-        content: "To access the course materials, please enroll now.",
-        okText: "Enroll Now",
-        cancelText: "Cancel",
-        onOk: handleEnroll,
-      });
-      return false;
-    }
+    // Content visibility is allowed for all users.
+    // Enrollment is still required for actions like progress/quiz.
     return true;
   };
 
@@ -278,9 +352,9 @@ export default function CourseDetails() {
   // Track progress percentage display
   const getTrackProgressMessage = () => {
     if (progress === 0) return "Not started yet";
-    if (progress < 30) return "Just getting started! Keep going! 🚀";
-    if (progress < 60) return "Making good progress! 💪";
-    if (progress < 80) return "Almost there! You're doing great! ⭐";
+    if (progress < 30) return "Just getting started! Keep going! ";
+    if (progress < 60) return "Making good progress! ";
+    if (progress < 80) return "Almost there! You're doing great! ";
     if (progress < 100) return "So close to completion! 🎯";
     return "Course completed! Excellent work! 🎉";
   };
@@ -348,7 +422,7 @@ export default function CourseDetails() {
               <Space wrap size={8} style={{ marginBottom: 16 }}>
                 <Tag icon={<BookOutlined />} color="cyan">{course.category}</Tag>
                 <Tag icon={<StarOutlined />} color="gold">{course.level}</Tag>
-                <Tag icon={<ClockCircleOutlined />} color="green">{course.duration}</Tag>
+                <Tag icon={<ClockCircleOutlined />} color="green">{course.duration} Hours</Tag>
                 <Tag icon={<UserOutlined />} color="blue">
                   {course.enrollment_count || 0} Students
                 </Tag>
@@ -359,17 +433,26 @@ export default function CourseDetails() {
 
               {enrollmentStatus === "enrolled" && (
                 <div style={{ marginTop: 20, background: "rgba(255,255,255,0.2)", padding: 16, borderRadius: 12 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <Text strong style={{ color: "white" }}>Course Progress</Text>
-                    <Text strong style={{ color: "#ffd700" }}>{progress}%</Text>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <Text strong style={{ color: "white", fontSize: 14 }}>Your Progress</Text>
+                    <Text strong style={{ color: "#ffd700", fontSize: 18 }}>{progress}%</Text>
                   </div>
                   <Progress 
                     percent={progress} 
                     strokeColor="#ffd700"
                     showInfo={false}
                     trailColor="rgba(255,255,255,0.3)"
+                    strokeWidth={6}
                   />
-                  <div style={{ marginTop: 8, fontSize: 12, color: "rgba(255,255,255,0.8)" }}>
+                  <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", fontSize: 12, color: "rgba(255,255,255,0.9)" }}>
+                    <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 12 }}>
+                      ✅ {completedLessons.length} of {lessons.length} lessons completed
+                    </Text>
+                    <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 12 }}>
+                      {lessons.length > 0 ? Math.round((completedLessons.length / lessons.length) * 100) : 0}% done
+                    </Text>
+                  </div>
+                  <div style={{ marginTop: 10, fontSize: 12, color: "rgba(255,255,255,0.8)", fontStyle: "italic" }}>
                     {getTrackProgressMessage()}
                   </div>
                 </div>
@@ -381,12 +464,27 @@ export default function CourseDetails() {
                     <Button 
                       type="primary" 
                       size="large" 
+                      icon={<CheckCircleOutlined />}
+                      disabled
+                      style={{ 
+                        backgroundColor: "#52c41a", 
+                        borderColor: "#52c41a",
+                        height: 48,
+                        fontSize: 16,
+                        color: "white",
+                      }}
+                    >
+                      Enrolled
+                    </Button>
+                    <Button 
+                      type="primary" 
+                      size="large" 
                       icon={<RocketOutlined />}
                       onClick={handleStartLearning}
                       loading={isStartingLearning}
                       style={{ 
-                        backgroundColor: "#52c41a", 
-                        borderColor: "#52c41a",
+                        backgroundColor: "#1890ff", 
+                        borderColor: "#1890ff",
                         height: 48,
                         fontSize: 16,
                       }}
@@ -394,7 +492,7 @@ export default function CourseDetails() {
                       Start Learning
                     </Button>
                     <Button 
-                      type="primary"
+                      type="default"
                       size="large" 
                       icon={<ExperimentOutlined />}
                       onClick={handleStartQuiz}
@@ -408,38 +506,28 @@ export default function CourseDetails() {
                         color: progress >= 80 ? "white" : "#999",
                       }}
                     >
-                      Start Quiz {progress < 80 && `(${progress}% Required)`}
-                    </Button>
-                    <Button 
-                      size="large" 
-                      icon={<BookOutlined />}
-                      onClick={handleContinueLearning}
-                      style={{ 
-                        height: 48,
-                        fontSize: 16,
-                      }}
-                    >
-                      Continue Learning
+                      Start Test {progress < 80 && `(${progress}% Required)`}
                     </Button>
                   </>
                 ) : (
                   <>
-                    {/* For non-enrolled users: Enroll Now first, then Start Learning, then Start Quiz */}
                     <Button 
                       type="primary" 
                       size="large" 
                       icon={<BookOutlined />}
-                      onClick={handleEnroll}
+                      onClick={confirmEnrollmentAndEnroll}
                       loading={enrolling}
                       style={{ 
                         height: 48,
                         fontSize: 16,
                         backgroundColor: "#1890ff",
+                        borderColor: "#1890ff",
                       }}
                     >
                       Enroll Now
                     </Button>
                     <Button 
+                      type="default"
                       size="large" 
                       icon={<RocketOutlined />}
                       onClick={handleStartLearning}
@@ -451,6 +539,7 @@ export default function CourseDetails() {
                       Start Learning
                     </Button>
                     <Button 
+                      type="default"
                       size="large" 
                       icon={<ExperimentOutlined />}
                       onClick={handleStartQuiz}
@@ -495,7 +584,7 @@ export default function CourseDetails() {
               </Text>
               <Space split="•">
                 <Text type="secondary">
-                  ✅ Completed: {completedLessons.length} / {course.lessons?.length || 0} lessons
+                  ✅ Completed: {completedLessons.length} / {lessons.length || 0} lessons
                 </Text>
                 <Text type="secondary">
                   {progress === 100 ? "🏆 Certificate Ready!" : "🎯 Keep pushing forward!"}
@@ -533,20 +622,30 @@ export default function CourseDetails() {
         >
           {enrollmentStatus !== "enrolled" && (
             <Alert
-              message="Enroll to Access Course Content"
-              description="You need to enroll in this course to access lessons, videos, and materials."
+              message="Preview Available"
+              description="You can view lesson content and materials, but you need to enroll to get certification."
               type="info"
               showIcon
               style={{ marginBottom: 24, borderRadius: 12 }}
               action={
-                <Button size="small" type="primary" onClick={handleEnroll}>
+                <Button
+                  size="small"
+                  type="primary"
+                  onClick={confirmEnrollmentAndEnroll}
+                  loading={enrolling}
+                  style={{
+                    backgroundColor: "#1890ff",
+                    borderColor: "#1890ff",
+                  }}
+                >
                   Enroll Now
                 </Button>
               }
             />
           )}
 
-          {course.lessons && course.lessons.length > 0 ? (
+          {lessons && lessons.length > 0 ? (
+
             <Collapse
               accordion
               onChange={(keys) => setActiveKeys(keys)}
@@ -554,9 +653,9 @@ export default function CourseDetails() {
               style={{ borderRadius: 12 }}
               expandIconPosition="end"
             >
-              {course.lessons.map((lesson, index) => {
+              {lessons.map((lesson, index) => {
                 const isCompleted = completedLessons.includes(lesson.id);
-                const canAccess = enrollmentStatus === "enrolled";
+                const canAccess = true;
 
                 return (
                   <Panel
@@ -572,10 +671,8 @@ export default function CourseDetails() {
                         <Space>
                           {isCompleted ? (
                             <CheckCircleOutlined style={{ color: "#52c41a", fontSize: 18 }} />
-                          ) : canAccess ? (
-                            <UnlockOutlined style={{ color: "#1890ff", fontSize: 18 }} />
                           ) : (
-                            <LockOutlined style={{ color: "#999", fontSize: 18 }} />
+                            <UnlockOutlined style={{ color: "#1890ff", fontSize: 18 }} />
                           )}
                           <Text strong style={{ fontSize: 16 }}>Lesson {index + 1}: {lesson.title}</Text>
                         </Space>
@@ -595,38 +692,26 @@ export default function CourseDetails() {
                           Video Content
                         </Text>
                         <div style={{ marginTop: 8 }}>
-                          {canAccess ? (
-                            lesson.video_url ? (
-                              <video 
-                                controls 
-                                style={{ width: "100%", borderRadius: 12, maxHeight: 400 }} 
-                                src={lesson.video_url}
-                                poster={course.thumbnail_url}
-                              >
-                                Your browser does not support the video tag.
-                              </video>
-                            ) : (
-                              <div style={{ 
-                                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
-                                padding: 40, 
-                                textAlign: "center", 
-                                borderRadius: 12,
-                                color: "white",
-                              }}>
-                                <PlayCircleOutlined style={{ fontSize: 48, marginBottom: 16 }} />
-                                <p style={{ margin: 0 }}>Video content will be added soon</p>
-                              </div>
-                            )
+                          {lesson.video_url ? (
+                            <video 
+                              controls 
+                              style={{ width: "100%", borderRadius: 12, maxHeight: 400 }} 
+                              src={lesson.video_url}
+                              poster={course.thumbnail_url}
+                              onEnded={() => handleLessonComplete(lesson.id)}
+                            >
+                              Your browser does not support the video tag.
+                            </video>
                           ) : (
                             <div style={{ 
-                              background: "#f5f5f5", 
+                              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
                               padding: 40, 
                               textAlign: "center", 
-                              borderRadius: 12 
+                              borderRadius: 12,
+                              color: "white",
                             }}>
-                              <LockOutlined style={{ fontSize: 48, color: "#999", marginBottom: 16 }} />
-                              <p>Enroll to access video content</p>
-                              <Button type="primary" onClick={handleEnroll}>Enroll Now</Button>
+                              <PlayCircleOutlined style={{ fontSize: 48, marginBottom: 16 }} />
+                              <p style={{ margin: 0 }}>Video content will be added soon</p>
                             </div>
                           )}
                         </div>
@@ -638,24 +723,18 @@ export default function CourseDetails() {
                           Course Material
                         </Text>
                         <div>
-                          {canAccess ? (
-                            lesson.material_url ? (
-                              <Button 
-                                icon={<FilePdfOutlined />} 
-                                href={lesson.material_url} 
-                                target="_blank"
-                                type="link"
-                                style={{ paddingLeft: 0 }}
-                              >
-                                Download Lesson Material
-                              </Button>
-                            ) : (
-                              <Text type="secondary">No material available for this lesson</Text>
-                            )
+                          {lesson.material_url ? (
+                            <Button 
+                              icon={<FilePdfOutlined />} 
+                              href={lesson.material_url} 
+                              target="_blank"
+                              type="link"
+                              style={{ paddingLeft: 0 }}
+                            >
+                              Download Lesson Material
+                            </Button>
                           ) : (
-                            <Text type="secondary" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <LockOutlined /> Enroll to access course materials
-                            </Text>
+                            <Text type="secondary">No material available for this lesson</Text>
                           )}
                         </div>
                       </div>

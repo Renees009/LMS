@@ -1,12 +1,16 @@
 from django.urls import path
 
 from course.views import (
-    CourseCreateView,
+    CourseCompleteView,
     CourseContinueView,
     CourseDetailView,
     CourseLessonsListView,
     CourseListView,
     CourseProgressView,
+    CourseQuizHighestScoreView,
+    CourseQuizSubmitView,
+    CourseQuizView,
+    CourseCreateView,
     LessonCompletionCreateView,
 )
 
@@ -19,6 +23,10 @@ urlpatterns = [
 
     path("courses/lessons/complete/", LessonCompletionCreateView.as_view(), name="lesson-complete"),
     path("courses/progress/<int:course_id>/", CourseProgressView.as_view(), name="course-progress"),
+    path("courses/<int:course_id>/quiz/", CourseQuizView.as_view(), name="course-quiz"),
+    path("courses/<int:course_id>/quiz/highest-score/", CourseQuizHighestScoreView.as_view(), name="course-quiz-highest-score"),
+    path("courses/<int:course_id>/quiz/submit/", CourseQuizSubmitView.as_view(), name="course-quiz-submit"),
+    path("courses/<int:course_id>/complete/", CourseCompleteView.as_view(), name="course-complete"),
     path("courses/continue/<int:course_id>/", CourseContinueView.as_view(), name="course-continue"),
 ]
 

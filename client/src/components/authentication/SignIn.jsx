@@ -22,14 +22,10 @@ export default function SignIn() {
 
     setLoading(true);
     try {
-      console.log("Attempting login for user:", username);
-
       const requestBody = {
         username,
         password,
       };
-
-      console.log("Sending login request to /api/auth/login/");
 
       const res = await fetch(`${API_BASE}/api/auth/login/`, {
         method: "POST",
@@ -39,14 +35,7 @@ export default function SignIn() {
         body: JSON.stringify(requestBody),
       });
 
-      console.log("Response status:", res.status);
-
-      const data = await res.json().catch((err) => {
-        console.error("Failed to parse JSON response:", err);
-        return null;
-      });
-
-      console.log("Response data:", data);
+      const data = await res.json().catch(() => null);
 
       if (!res.ok) {
         console.error("Login error:", data);
@@ -60,12 +49,9 @@ export default function SignIn() {
       const role = data?.role;
 
       if (!access || !role) {
-        console.error("Missing access token or role in response:", data);
         message.error("Server error: incomplete response");
         return;
       }
-
-      console.log("Login successful:", { username, role });
       setAuth({ token: access, role });
       message.success("Login successful");
 

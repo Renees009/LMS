@@ -7,10 +7,12 @@ import {
   Card,
   Typography,
   Radio,
+  Select,
   message,
 } from "antd";
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 const API_BASE = "http://localhost:8000";
 
@@ -18,6 +20,53 @@ export default function SignUp() {
   const [accountType, setAccountType] = useState("student");
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
+  const [passwordErrors, setPasswordErrors] = useState([]);
+  const [passwordValue, setPasswordValue] = useState("");
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+
+  const validatePassword = (password) => {
+    const errors = [];
+    
+    if (!password) {
+      return errors;
+    }
+    
+    if (password.length < 8) {
+      errors.push("at least 8 characters");
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push("at least 1 uppercase letter");
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push("at least 1 lowercase letter");
+    }
+    if (!/\d/.test(password)) {
+      errors.push("at least 1 digit");
+    }
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      errors.push("at least 1 special character");
+    }
+    
+    return errors;
+  };
+
+  const handlePasswordChange = (e) => {
+    const password = e.target.value;
+    setPasswordValue(password);
+    const errors = validatePassword(password);
+    setPasswordErrors(errors);
+    form.setFieldsValue({ password });
+  };
+
+  const handlePasswordFocus = () => {
+    setIsPasswordFocused(true);
+  };
+
+  const handlePasswordBlur = () => {
+    setTimeout(() => {
+      setIsPasswordFocused(false);
+    }, 200);
+  };
 
   const onFinish = async (values) => {
     const {
@@ -29,6 +78,7 @@ export default function SignUp() {
       tutorName,
       specialization,
       contactNumber,
+      preferredCategory,
     } = values;
 
     if (accountType === "student" && !fullName) {
@@ -37,6 +87,11 @@ export default function SignUp() {
     }
     if (accountType === "tutor" && !tutorName) {
       message.error("Tutor Name is required for tutors");
+      return;
+    }
+
+    if (passwordErrors.length > 0) {
+      message.error("Please fix password requirements before submitting");
       return;
     }
 
@@ -52,13 +107,12 @@ export default function SignUp() {
       if (accountType === "student") {
         requestBody.fullName = fullName || "";
         requestBody.phone = phone || "";
+        requestBody.preferredCategory = preferredCategory || "";
       } else {
         requestBody.tutorName = tutorName || "";
         requestBody.specialization = specialization || "";
         requestBody.contactNumber = contactNumber || "";
       }
-
-      console.log("Sending signup request:", requestBody);
 
       const res = await fetch(`${API_BASE}/api/auth/signup/`, {
         method: "POST",
@@ -68,22 +122,12 @@ export default function SignUp() {
         body: JSON.stringify(requestBody),
       });
 
-      console.log("Response status:", res.status);
-
-      const data = await res.json().catch((err) => {
-        console.error("Failed to parse JSON response:", err);
-        return null;
-      });
-
-      console.log("Response data:", data);
+      const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        console.error("Signup error:", data);
-        
         let errorMsg = "Signup failed";
         
         if (data?.errors) {
-       
           if (data.errors.username) {
             errorMsg = Array.isArray(data.errors.username) 
               ? data.errors.username[0] 
@@ -97,7 +141,6 @@ export default function SignUp() {
               ? data.errors.password[0] 
               : data.errors.password;
           } else {
-           
             const firstKey = Object.keys(data.errors)[0];
             if (firstKey) {
               const firstError = data.errors[firstKey];
@@ -123,19 +166,16 @@ export default function SignUp() {
       const access = data.access;
       const role = data.role || accountType;
 
-      console.log("Signup successful:", { username, role, userId: data.id });
       setAuth({ token: access, role });
       message.success("Account created successfully");
 
-     
       form.resetFields();
+      setPasswordErrors([]);
+      setPasswordValue("");
+      setIsPasswordFocused(false);
 
       setTimeout(() => {
-        if (role === "student") {
-          window.location.href = "/signin";
-        } else {
-          window.location.href = "/signin";
-        }
+        window.location.href = "/signin";
       }, 500);
     } catch (error) {
       console.error("Signup request error:", error);
@@ -153,6 +193,8 @@ export default function SignUp() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
+        padding: "20px",
+        position: "relative",
       }}
     >
       <Card
@@ -191,9 +233,12 @@ export default function SignUp() {
           <Form.Item label="Account Type">
             <Radio.Group
               value={accountType}
-              onChange={(e) =>
-                setAccountType(e.target.value)
-              }
+              onChange={(e) => {
+                setAccountType(e.target.value);
+                setPasswordErrors([]);
+                setPasswordValue("");
+                setIsPasswordFocused(false);
+              }}
             >
               <Radio value="student">Student</Radio>
               <Radio value="tutor">Tutor</Radio>
@@ -216,40 +261,17 @@ export default function SignUp() {
           <Form.Item
             label="Password"
             name="password"
-            rules={[
-              {
-                required: true,
-                message: "Enter password",
-              },
-              {
-                min: 8,
-                message: "Password must be at least 8 characters",
-              },
-              {
-                validator: (_, value) => {
-                  if (!value) return Promise.resolve();
-
-                  const hasUppercase = /[A-Z]/.test(value);
-                  const hasLowercase = /[a-z]/.test(value);
-                  const hasDigit = /\d/.test(value);
-                  const hasSpecial = /[^A-Za-z0-9]/.test(value);
-
-                  if (hasUppercase && hasLowercase && hasDigit && hasSpecial) {
-                    return Promise.resolve();
-                  }
-
-                  return Promise.reject(
-                    new Error(
-                      "Password must include at least 1 uppercase, 1 lowercase, 1 digit, and 1 special character"
-                    )
-                  );
-                },
-              },
-            ]}
+            required
+            validateStatus={passwordErrors.length > 0 && isPasswordFocused ? "error" : ""}
+            help={null}
           >
-            <Input.Password placeholder="Enter password" />
+            <Input.Password 
+              placeholder="Enter password" 
+              onChange={handlePasswordChange}
+              onFocus={handlePasswordFocus}
+              onBlur={handlePasswordBlur}
+            />
           </Form.Item>
-
 
           <Form.Item
             label="Email"
@@ -281,6 +303,25 @@ export default function SignUp() {
                 ]}
               >
                 <Input placeholder="Enter full name" />
+              </Form.Item>
+
+              <Form.Item
+                label="Preferred Category"
+                name="preferredCategory"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please select a preferred category",
+                  },
+                ]}
+              >
+                <Select placeholder="Select your preferred learning category">
+                  <Option value="programming">Programming</Option>
+                  <Option value="designing">Designing</Option>
+                  <Option value="ai">Artificial Intelligence</Option>
+                  <Option value="cs">Computer Science</Option>
+                  <Option value="other">Other</Option>
+                </Select>
               </Form.Item>
 
               <Form.Item
@@ -344,6 +385,99 @@ export default function SignUp() {
           <a href="/signin">Sign In</a>
         </Text>
       </Card>
+
+      {isPasswordFocused && passwordValue && passwordErrors.length > 0 && (
+        <div style={{ 
+          position: "fixed",
+          right: "50px",
+          top: "50%",
+          transform: "translateY(-50%)",
+          width: "280px",
+          padding: "16px",
+          background: "#fff2f0",
+          border: "1px solid #ffccc7",
+          borderRadius: "8px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          zIndex: 1000,
+          animation: "fadeIn 0.3s ease-in-out",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
+            <span style={{ fontSize: "18px", marginRight: "8px" }}>⚠️</span>
+            <Text strong style={{ color: "#ff4d4f", fontSize: "14px" }}>
+              Password must include:
+            </Text>
+          </div>
+          <ul style={{ margin: "8px 0 0 0", paddingLeft: "20px" }}>
+            {passwordErrors.map((error, index) => (
+              <li key={index} style={{ 
+                color: "#ff4d4f", 
+                fontSize: "13px",
+                marginBottom: "8px",
+                listStyleType: "circle"
+              }}>
+                {error}
+              </li>
+            ))}
+          </ul>
+          <div style={{ 
+            marginTop: 12, 
+            paddingTop: 8, 
+            borderTop: "1px solid #ffccc7",
+            fontSize: "12px",
+            color: "#ff7a5c"
+          }}>
+            <Text type="secondary" style={{ fontSize: "11px" }}>
+              * Please ensure your password meets all requirements
+            </Text>
+          </div>
+        </div>
+      )}
+
+      {isPasswordFocused && !passwordValue && (
+        <div style={{ 
+          position: "fixed",
+          right: "50px",
+          top: "50%",
+          transform: "translateY(-50%)",
+          width: "280px",
+          padding: "16px",
+          background: "#e6f7ff",
+          border: "1px solid #91d5ff",
+          borderRadius: "8px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          zIndex: 1000,
+          animation: "fadeIn 0.3s ease-in-out",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+            <span style={{ fontSize: "18px", marginRight: "8px" }}>💡</span>
+            <Text strong style={{ color: "#1890ff", fontSize: "14px" }}>
+              Password Requirements
+            </Text>
+          </div>
+          <ul style={{ margin: "8px 0 0 0", paddingLeft: "20px" }}>
+            <li style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}>At least 8 characters</li>
+            <li style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}>At least 1 uppercase letter</li>
+            <li style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}>At least 1 lowercase letter</li>
+            <li style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}>At least 1 digit</li>
+            <li style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}>At least 1 special character</li>
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
+
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-50%) translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+    }
+  }
+`;
+document.head.appendChild(style);

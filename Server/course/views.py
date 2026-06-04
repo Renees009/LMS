@@ -1,5 +1,5 @@
 import json
-
+from django.db.models import Max
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import ValidationError
@@ -15,7 +15,13 @@ from course.serializers import (
 )
 
 from tutor.models import TutorCourse, TutorProfile
-from student.models import StudentProfile
+from student.models import (
+    StudentCourseCompletion,
+    StudentCourseEnrollment,
+    StudentProfile,
+    StudentQuizAttempt,
+)
+from student.serializers import StudentCourseCompletionSerializer
 
 
 class CourseListView(generics.ListAPIView):
@@ -206,6 +212,20 @@ class LessonCompletionCreateView(APIView):
             lesson=lesson,
         )
 
+        enrollment = StudentCourseEnrollment.objects.filter(
+            student_profile=profile,
+            course=lesson.course,
+        ).first()
+
+        if enrollment:
+            completed_count = StudentLessonCompletion.objects.filter(
+                student_profile=profile,
+                lesson__course=lesson.course,
+            ).count()
+            total_lessons = lesson.course.lessons.count()
+            enrollment.progress = int((completed_count / total_lessons) * 100) if total_lessons else 0
+            enrollment.save(update_fields=["progress"])
+
         return Response(LessonCompletionSerializer(obj).data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
@@ -223,13 +243,15 @@ class CourseProgressView(APIView):
                     "course_id": course_id,
                     "total_lessons": 0,
                     "completed_lessons": 0,
+                    "completed_lesson_ids": [],
                     "progress_percentage": 0.0,
                     "next_lesson_id": None,
+                    "course_completed": False,
                 },
                 status=status.HTTP_200_OK,
             )
 
-        completed_lesson_ids = set(
+        completed_lesson_ids = list(
             StudentLessonCompletion.objects.filter(
                 student_profile=profile,
                 lesson__course_id=course_id,
@@ -239,21 +261,175 @@ class CourseProgressView(APIView):
         completed = len(completed_lesson_ids)
         progress_percentage = (completed / total) * 100.0
 
+        enrollment = StudentCourseEnrollment.objects.filter(
+            student_profile=profile,
+            course_id=course_id,
+        ).first()
+        if enrollment and enrollment.progress != int(progress_percentage):
+            enrollment.progress = int(progress_percentage)
+            enrollment.save(update_fields=["progress"])
+
         next_lesson = (
             lessons_qs.exclude(id__in=completed_lesson_ids)
             .order_by("order")
             .first()
         )
 
+        course_completed = StudentCourseCompletion.objects.filter(
+            student_profile=profile,
+            enrollment__course_id=course_id,
+        ).exists()
+
         payload = {
             "course_id": course_id,
             "total_lessons": total,
             "completed_lessons": completed,
+            "completed_lesson_ids": completed_lesson_ids,
             "progress_percentage": float(progress_percentage),
             "next_lesson_id": next_lesson.id if next_lesson else None,
+            "course_completed": course_completed,
         }
 
         return Response(payload, status=status.HTTP_200_OK)
+
+
+class CourseQuizView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, course_id: int):
+        course = get_object_or_404(Course, id=course_id)
+
+        quiz_payload = {
+            "course_id": course.id,
+            "title": f"{course.title} Final Quiz",
+            "questions": [
+                {
+                    "question": "What is the primary topic of this course?",
+                    "options": [
+                        course.category,
+                        "General Knowledge",
+                        "Beginner Basics",
+                        "Advanced Techniques",
+                    ],
+                    "correct_answer": course.category,
+                },
+                {
+                    "question": "How many lessons does this course contain?",
+                    "options": [
+                        str(course.lessons.count()),
+                        "5",
+                        "10",
+                        "12",
+                    ],
+                    "correct_answer": str(course.lessons.count()),
+                },
+                {
+                    "question": "What skill level is this course designed for?",
+                    "options": [
+                        course.level,
+                        "Beginner",
+                        "Intermediate",
+                        "Expert",
+                    ],
+                    "correct_answer": course.level,
+                },
+            ],
+        }
+
+        return Response(quiz_payload, status=status.HTTP_200_OK)
+
+
+class CourseQuizHighestScoreView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, course_id: int):
+        profile = get_object_or_404(StudentProfile, user=request.user)
+        course = get_object_or_404(Course, id=course_id)
+
+        attempts = StudentQuizAttempt.objects.filter(student_profile=profile, course=course)
+        highest_score = attempts.aggregate(Max("score"))["score__max"] or 0
+        attempt_count = attempts.count()
+        course_completed = StudentCourseCompletion.objects.filter(
+            student_profile=profile,
+            enrollment__course=course,
+        ).exists()
+
+        payload = {
+            "highest_score": highest_score,
+            "reattempt_count": attempt_count,
+            "course_completed": course_completed,
+        }
+
+        return Response(payload, status=status.HTTP_200_OK)
+
+
+class CourseQuizSubmitView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, course_id: int):
+        profile = get_object_or_404(StudentProfile, user=request.user)
+        course = get_object_or_404(Course, id=course_id)
+
+        score = request.data.get("score")
+        answers = request.data.get("answers", {})
+
+        if score is None:
+            raise ValidationError({"score": "score is required"})
+
+        score = int(score)
+        passed = score >= 70
+
+        StudentQuizAttempt.objects.create(
+            student_profile=profile,
+            course=course,
+            score=score,
+            answers=answers,
+            is_passed=passed,
+        )
+
+        attempts = StudentQuizAttempt.objects.filter(student_profile=profile, course=course)
+        highest_score = attempts.aggregate(Max("score"))["score__max"] or 0
+        attempt_count = attempts.count()
+        course_completed = StudentCourseCompletion.objects.filter(
+            student_profile=profile,
+            enrollment__course=course,
+        ).exists()
+
+        return Response(
+            {
+                "highest_score": highest_score,
+                "reattempt_count": attempt_count,
+                "course_completed": course_completed,
+                "passed": passed,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class CourseCompleteView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, course_id: int):
+        profile = get_object_or_404(StudentProfile, user=request.user)
+        course = get_object_or_404(Course, id=course_id)
+        enrollment = get_object_or_404(StudentCourseEnrollment, student_profile=profile, course=course)
+        tutor_course = TutorCourse.objects.filter(course=course).first()
+
+        if not tutor_course:
+            raise ValidationError({"detail": "No tutor course found for this course."})
+
+        completion, created = StudentCourseCompletion.objects.get_or_create(
+            student_profile=profile,
+            enrollment=enrollment,
+            tutor_course=tutor_course,
+        )
+
+        if enrollment.status != "completed":
+            enrollment.status = "completed"
+            enrollment.save(update_fields=["status"])
+
+        serializer = StudentCourseCompletionSerializer(completion)
+        return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
 class CourseContinueView(APIView):

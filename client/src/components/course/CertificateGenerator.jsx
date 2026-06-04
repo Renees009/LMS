@@ -10,8 +10,6 @@ const CertificateGenerator = ({ visible, onClose, course, user, progressPercenta
 
 
   const getStudentName = () => {
-    console.log("Getting student name from:", { user, course });
-
     if (user) {
       if (user.full_name && user.full_name !== "Student") return user.full_name;
       if (user.student_name && user.student_name !== "Student") return user.student_name;
@@ -54,7 +52,6 @@ const CertificateGenerator = ({ visible, onClose, course, user, progressPercenta
       
       if (response.ok) {
         const data = await response.json();
-        console.log("Profile API response:", data);
         return data.student_name || data.username || null;
       }
       return null;
@@ -77,8 +74,6 @@ const CertificateGenerator = ({ visible, onClose, course, user, progressPercenta
         if (!name || name === "Student" || name === "student") {
           name = "Valued Student";
         }
-        
-        console.log("Final student name:", name);
         setStudentName(name);
       };
       loadStudentName();

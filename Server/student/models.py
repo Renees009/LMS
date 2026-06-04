@@ -32,6 +32,7 @@ class StudentCourseEnrollment(models.Model):
     )
 
     status = models.CharField(max_length=50, default="enrolled")
+    progress = models.PositiveIntegerField(default=0)
     enrolled_at = models.DateField(auto_now_add=True)
 
     class Meta:
@@ -39,6 +40,29 @@ class StudentCourseEnrollment(models.Model):
 
     def __str__(self):
         return f"{self.student_profile} - {self.course.title}"
+
+
+class StudentQuizAttempt(models.Model):
+    student_profile = models.ForeignKey(
+        StudentProfile,
+        on_delete=models.CASCADE,
+        related_name="quiz_attempts",
+    )
+    course = models.ForeignKey(
+        "course.Course",
+        on_delete=models.CASCADE,
+        related_name="quiz_attempts",
+    )
+    score = models.PositiveIntegerField()
+    answers = models.JSONField(blank=True, null=True)
+    is_passed = models.BooleanField(default=False)
+    attempted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-attempted_at"]
+
+    def __str__(self):
+        return f"{self.student_profile} - {self.course.title} quiz {self.score}%"
 
 
 class StudentCourseCompletion(models.Model):

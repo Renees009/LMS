@@ -47,24 +47,26 @@ export default function App() {
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
 
-        <Route
+        {/* REMOVE these standalone course routes */}
+        {/* <Route
           path="/course/:courseId"
           element={
             <RequireAuth>
               <CourseDetails />
             </RequireAuth>
           }
-        />
+        /> */}
         
-        <Route
+        {/* <Route
           path="/quiz/:courseId"
           element={
             <RequireAuth>
               <QuizPage />
             </RequireAuth>
           }
-        />
-        <Route path="/course/:courseId" element={<CourseDetails />} />
+        /> */}
+        {/* <Route path="/course/:courseId" element={<CourseDetails />} /> */}
+
         <Route
           path="/student"
           element={
@@ -79,6 +81,9 @@ export default function App() {
           <Route path="enrolled" element={<EnrolledCourse />} />
           <Route path="completed" element={<CompletedCourse />} />
           <Route path="settings" element={<Settings />} />
+          {/* ADD Course Details INSIDE the student layout */}
+          <Route path="course/:courseId" element={<CourseDetails />} />
+          <Route path="quiz/:courseId" element={<QuizPage />} />
         </Route>
 
         <Route

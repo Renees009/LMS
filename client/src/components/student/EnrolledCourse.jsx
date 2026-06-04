@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, Col, Row, Spin, Typography, message, Button } from "antd";
-import { BookOutlined, ReloadOutlined } from "@ant-design/icons";
+import { BookOutlined } from "@ant-design/icons";
 import CourseCard from "./CourseCard";
 
 const { Title, Text } = Typography;
@@ -30,10 +30,10 @@ export default function EnrolledCourse() {
       }
 
       const data = await res.json();
-      const list = Array.isArray(data) ? data : data?.results || [];
+      const list = Array.isArray(data) ? data : data?.results || data?.enrollments || [];
+      console.log("/api/me/enrollments response:", data);
       setEnrollments(list);
     } catch (e) {
-      console.error(e);
       message.error("Failed to load enrolled courses");
     } finally {
       setLoading(false);
@@ -54,31 +54,17 @@ export default function EnrolledCourse() {
           margin: "0 auto",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 24,
-            flexWrap: "wrap",
-            gap: 16,
-          }}
-        >
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-              <Title
-                level={3}
-                style={{
-                  margin: 0,
-                  color: "#111827",
-                  fontWeight: 600,
-                }}
-              >
-                Enrolled Courses
-              </Title>
-            </div>
-          </div>
-    
+        <div style={{ marginBottom: 24 }}>
+          <Title
+            level={3}
+            style={{
+              margin: 0,
+              color: "#111827",
+              fontWeight: 600,
+            }}
+          >
+            Enrolled Courses
+          </Title>
         </div>
 
         {loading ? (
@@ -94,23 +80,18 @@ export default function EnrolledCourse() {
           </div>
         ) : (
           <>
-            <div
-              style={{
-                marginBottom: 16,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-            </div>
             <Row gutter={[16, 16]}>
               {enrollments.map((enrollment) => (
                 <Col xs={24} sm={12} md={12} lg={8} xl={6} key={enrollment.id}>
                   <CourseCard
-                    course={enrollment}
+                    course={enrollment.course || enrollment}
                     enrollmentMeta={{
                       status: enrollment.status,
                       enrolled_at: enrollment.enrolled_at,
+                      course_id: enrollment.course?.id || enrollment.course,
+                    }}
+                    progressMeta={{
+                      progress_percentage: enrollment.progress ?? 0,
                     }}
                   />
                 </Col>
@@ -129,11 +110,9 @@ export default function EnrolledCourse() {
                     <Title level={4} style={{ color: "#666", marginBottom: 8 }}>
                       No Enrolled Courses
                     </Title>
-                    <Text style={{ color: "#999" }}>
-                      You haven't enrolled in any courses yet.
-                    </Text>
+                    <Text style={{ color: "#999" }}>You haven't enrolled in any courses yet.</Text>
                     <div style={{ marginTop: 20 }}>
-                      <Button type="primary" href="/explore">
+                      <Button type="primary" href="/student/explore">
                         Explore Courses
                       </Button>
                     </div>
@@ -147,3 +126,4 @@ export default function EnrolledCourse() {
     </div>
   );
 }
+

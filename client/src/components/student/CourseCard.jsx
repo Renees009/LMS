@@ -99,34 +99,30 @@ export default function CourseCard({
 
   if (!course) return null;
 
+  const hasNestedCourse = course && typeof course === "object" && course.course && typeof course.course === "object";
+  const courseData = hasNestedCourse ? course.course : course;
+
   const getCourseId = () => {
-    console.log("[CourseCard] Course object:", course);
-    
-    if (course.id) {
-      console.log("[CourseCard] Using course.id:", course.id);
-      return course.id;
+    if (courseData && typeof courseData === "object" && courseData.id) {
+      return courseData.id;
     }
-    
-    if (course.course && course.course.id) {
-      console.log("[CourseCard] Using course.course.id:", course.course.id);
+
+    if (hasNestedCourse && course.course.id) {
       return course.course.id;
     }
-    
-    if (course.course_id) {
-      console.log("[CourseCard] Using course.course_id:", course.course_id);
+
+    if (course && typeof course === "object" && course.course_id) {
       return course.course_id;
     }
-    
+
     if (enrollmentMeta && enrollmentMeta.course_id) {
-      console.log("[CourseCard] Using enrollmentMeta.course_id:", enrollmentMeta.course_id);
       return enrollmentMeta.course_id;
     }
-    
+
     if (completionMeta && completionMeta.course_id) {
-      console.log("[CourseCard] Using completionMeta.course_id:", completionMeta.course_id);
       return completionMeta.course_id;
     }
-    
+
     console.error("[CourseCard] Could not find course ID in:", { course, enrollmentMeta, completionMeta });
     return null;
   };
@@ -134,8 +130,12 @@ export default function CourseCard({
   const actualCourseId = getCourseId();
 
   const getCourseDetail = (field) => {
-    if (course[field]) return course[field];
-    if (course.course && course.course[field]) return course.course[field];
+    if (courseData && typeof courseData === "object" && courseData[field] !== undefined && courseData[field] !== null) {
+      return courseData[field];
+    }
+    if (hasNestedCourse && course.course[field] !== undefined && course.course[field] !== null) {
+      return course.course[field];
+    }
     return null;
   };
 
@@ -163,52 +163,53 @@ export default function CourseCard({
     enrollmentMeta &&
     enrollmentMeta?.status !== "completed";
 
-  const handleEnroll = async () => {
-    setLoading(true);
-    
-    if (!actualCourseId) {
-      message.error("Invalid course ID");
+  // In CourseCard.jsx, update these navigation calls:
+
+const handleEnroll = async () => {
+  setLoading(true);
+  
+  if (!actualCourseId) {
+    message.error("Invalid course ID");
+    setLoading(false);
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/me/enrollments/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("lms_token")}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ course: actualCourseId }),
+    });
+
+    if (!res.ok) {
+      // CHANGE THIS LINE
+      navigate(`/student/course/${actualCourseId}`);  // Added /student/
       setLoading(false);
       return;
     }
 
-    try {
-      const res = await fetch(`${API_BASE}/api/me/enrollments/`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("lms_token")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ course: actualCourseId }),
-      });
+    message.success("Successfully enrolled! Redirecting to course...");
+    // CHANGE THIS LINE
+    navigate(`/student/course/${actualCourseId}`);  // Added /student/
+  } catch (error) {
+    console.error(error);
+    // CHANGE THIS LINE
+    navigate(`/student/course/${actualCourseId}`);  // Added /student/
+    setLoading(false);
+  }
+};
 
-      if (!res.ok) {
-        
-        navigate(`/course/${actualCourseId}`);
-        setLoading(false);
-        return;
-      }
+const handleContinueLearning = () => {
+  if (!actualCourseId) {
+    message.error("Course not found. Please try again.");
+    return;
+  }
 
-      message.success("Successfully enrolled! Redirecting to course...");
-      navigate(`/course/${actualCourseId}`);
-    } catch (error) {
-      console.error(error);
-   
-      navigate(`/course/${actualCourseId}`);
-      setLoading(false);
-    }
-  };
-
-  const handleContinueLearning = () => {
-    console.log("[CourseCard] Continue button clicked - Course ID:", actualCourseId);
-    
-    if (!actualCourseId) {
-      message.error("Course not found. Please try again.");
-      return;
-    }
-
-    navigate(`/course/${actualCourseId}`);
-  };
+  navigate(`/student/course/${actualCourseId}`);  
+};
 
   const handleDownloadCertificate = () => {
     if (!userData) {

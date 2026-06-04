@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Layout, Menu, Typography, Button, Tooltip } from "antd";
+import { Layout, Menu, Typography } from "antd";
 import {
   UserOutlined,
   BookOutlined,
@@ -8,8 +8,6 @@ import {
   CheckCircleOutlined,
   SettingOutlined,
   LogoutOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
 } from "@ant-design/icons";
 
 const { Sider, Content } = Layout;
@@ -18,7 +16,7 @@ const { Title } = Typography;
 export default function StudentLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("lms_token");
@@ -71,98 +69,85 @@ export default function StudentLayout() {
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      <Sider
-        width={250}
-        collapsed={collapsed}
-        collapsible
-        trigger={null}
+      <div
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         style={{
-          background: "#1e293b",
           position: "fixed",
           left: 0,
           top: 0,
           bottom: 0,
           zIndex: 100,
+          width: isHovered ? 250 : 80,
+          transition: "width 0.3s ease",
+          background: "#1e293b",
+          boxShadow: isHovered ? "2px 0 8px rgba(0,0,0,0.15)" : "none",
         }}
       >
-        <div
-          style={{
-            padding: "16px 20px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 8,
-          }}
-        >
-          {!collapsed ? (
-            <>
-              <Title level={4} style={{ color: "white", margin: 0, flex: 1 }}>
-                Flow Student Hub
-              </Title>
-              <Tooltip title="Collapse" placement="right">
-                <Button
-                  type="text"
-                  icon={<MenuFoldOutlined />}
-                  onClick={() => setCollapsed(true)}
-                  style={{
-                    color: "white",
-                    fontSize: "16px",
-                    width: 32,
-                    height: 32,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                />
-              </Tooltip>
-            </>
-          ) : (
-            <div
-              style={{
-                width: "100%",
-                display: "flex",
-                justifyContent: "center",
-              }}
-            >
-              <Tooltip title="Expand" placement="right">
-                <Button
-                  type="text"
-                  icon={<MenuUnfoldOutlined />}
-                  onClick={() => setCollapsed(false)}
-                  style={{
-                    color: "white",
-                    fontSize: "16px",
-                    width: 32,
-                    height: 32,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                />
-              </Tooltip>
-            </div>
-          )}
-        </div>
-
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          onClick={handleMenuClick}
+        <Sider
+          width={250}
+          collapsed={!isHovered}
+          collapsedWidth={80}
+          trigger={null}
           style={{
             background: "#1e293b",
-            fontSize: "14px",
-            borderRight: "none",
-            marginTop: 8,
+            height: "100%",
           }}
-        />
-      </Sider>
+        >
+          <div
+            style={{
+              padding: "20px 16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderBottom: "1px solid rgba(255,255,255,0.1)",
+            }}
+          >
+            {isHovered ? (
+              <Title level={4} style={{ color: "white", margin: 0, textAlign: "center" }}>
+                Flow Student Hub
+              </Title>
+            ) : (
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  background: "rgba(255,255,255,0.1)",
+                  borderRadius: 8,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  color: "white",
+                }}
+              >
+                F
+              </div>
+            )}
+          </div>
+
+          <Menu
+            theme="dark"
+            mode="inline"
+            selectedKeys={[location.pathname]}
+            items={menuItems}
+            onClick={handleMenuClick}
+            style={{
+              background: "#1e293b",
+              fontSize: "14px",
+              borderRight: "none",
+              marginTop: 8,
+            }}
+            inlineCollapsed={!isHovered}
+          />
+        </Sider>
+      </div>
 
       <Layout
         style={{
-          marginLeft: collapsed ? 80 : 250,
-          transition: "margin-left 0.2s ease",
+          marginLeft: isHovered ? 250 : 80,
+          transition: "margin-left 0.3s ease",
           background: "#f8fafc",
         }}
       >

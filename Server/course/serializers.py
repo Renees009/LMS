@@ -25,19 +25,32 @@ class LessonSerializer(serializers.ModelSerializer):
         ]
 
     def get_video_url(self, obj):
-        if obj.video_file:
-            return obj.video_file.url
-        return ""
+        if not obj.video_file:
+            return ""
+        request = self.context.get("request")
+        try:
+            if request:
+                return request.build_absolute_uri(obj.video_file.url)
+        except Exception:
+            pass
+        return obj.video_file.url
 
     def get_material_url(self, obj):
-        if obj.material_file:
-            return obj.material_file.url
-        return ""
+        if not obj.material_file:
+            return ""
+        request = self.context.get("request")
+        try:
+            if request:
+                return request.build_absolute_uri(obj.material_file.url)
+        except Exception:
+            pass
+        return obj.material_file.url
 
 
 class CourseSerializer(serializers.ModelSerializer):
 
     thumbnail_url = serializers.SerializerMethodField()
+    lessons = LessonSerializer(many=True, read_only=True)
 
     class Meta:
         model = Course
@@ -50,6 +63,7 @@ class CourseSerializer(serializers.ModelSerializer):
             "duration",
             "level",
             "description",
+            "lessons",
         ]
 
     def get_thumbnail_url(self, obj):

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, Col, Row, Spin, Typography, message, Button } from "antd";
-import { TrophyOutlined, ReloadOutlined } from "@ant-design/icons";
+import { TrophyOutlined } from "@ant-design/icons";
 import CourseCard from "./CourseCard";
 
 const { Title, Text } = Typography;
@@ -145,7 +145,7 @@ export default function CompletedCourse() {
                       Complete your enrolled courses to see them here
                     </Text>
                     <div style={{ marginTop: 20 }}>
-                      <Button type="primary" href="/enrolled-courses">
+                      <Button type="primary" href="/student/enrolled">
                         View Enrolled Courses
                       </Button>
                     </div>
