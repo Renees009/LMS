@@ -25,14 +25,13 @@ const API_BASE = "http://127.0.0.1:8000";
 export default function AddCourse() {
   const [loading, setLoading] = useState(false);
 
-  // useForm hook initialization
   const {
-    register,        // Registers input fields with React Hook Form
-    handleSubmit,    // Handles form submission
-    control,         // Controls custom components like Select, Upload
-    watch,           // Watches form field values in real-time
-    reset,           // Resets form to default values
-    formState: { errors }, // Contains validation errors
+    register,        
+    handleSubmit,    
+    control,         
+    watch,          
+    reset,           
+    formState: { errors }, 
   } = useForm({
     defaultValues: {
       number_of_lessons: 0,
@@ -40,7 +39,6 @@ export default function AddCourse() {
     },
   });
 
-  // Watch lesson count to dynamically render lesson forms
   const lessonCount = watch("number_of_lessons") || 0;
 
   const onSubmit = async (values) => {
@@ -49,7 +47,6 @@ export default function AddCourse() {
 
       const formData = new FormData();
 
-      // Append basic course information
       formData.append("title", values.title);
       formData.append("category", values.category);
       formData.append("duration", values.duration);

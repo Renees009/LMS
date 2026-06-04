@@ -1,4 +1,3 @@
-// src/components/course/CertificateGenerator.jsx
 import { useRef, useState, useEffect } from "react";
 import { Modal, Button, message } from "antd";
 import jsPDF from "jspdf";
@@ -9,11 +8,10 @@ const CertificateGenerator = ({ visible, onClose, course, user, progressPercenta
   const [generating, setGenerating] = useState(false);
   const [studentName, setStudentName] = useState("");
 
-  // Function to get student name from multiple sources
+
   const getStudentName = () => {
     console.log("Getting student name from:", { user, course });
-    
-    // Priority 1: Check user prop from parent
+
     if (user) {
       if (user.full_name && user.full_name !== "Student") return user.full_name;
       if (user.student_name && user.student_name !== "Student") return user.student_name;
@@ -21,7 +19,6 @@ const CertificateGenerator = ({ visible, onClose, course, user, progressPercenta
       if (user.username && user.username !== "student") return user.username;
     }
 
-    // Priority 2: Check localStorage for user data
     try {
       const userData = localStorage.getItem("user");
       if (userData) {
@@ -35,17 +32,14 @@ const CertificateGenerator = ({ visible, onClose, course, user, progressPercenta
       console.error("Error reading user from localStorage:", e);
     }
 
-    // Priority 3: Check course data for student name
     if (course) {
       if (course.student_name && course.student_name !== "Student") return course.student_name;
       if (course.username && course.username !== "student") return course.username;
     }
 
-    // Priority 4: Try to get from API synchronously (but we'll do this in useEffect)
     return null;
   };
 
-  // Fetch student name from API when modal opens
   const fetchStudentNameFromAPI = async () => {
     try {
       const token = localStorage.getItem("lms_token");
