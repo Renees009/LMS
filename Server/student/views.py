@@ -97,12 +97,16 @@ class StudentMeEnrollmentListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        student_profile = get_object_or_404(StudentProfile, user=self.request.user)
+        student_profile, _ = StudentProfile.objects.get_or_create(
+            user=self.request.user,
+            defaults={
+                "student_name": self.request.user.username if getattr(self.request.user, 'is_authenticated', False) else "Student",
+            },
+        )
         return StudentCourseEnrollment.objects.filter(student_profile=student_profile).select_related(
             "course",
             "student_profile",
         )
-
 
 
     def perform_create(self, serializer):

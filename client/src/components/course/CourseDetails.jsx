@@ -139,7 +139,6 @@ export default function CourseDetails() {
         
         if (enrolled) {
           setProgress(enrolled.progress || 0);
-          // Fetch detailed progress including completed lesson IDs
           await fetchCourseProgress();
         }
       }
@@ -190,7 +189,6 @@ export default function CourseDetails() {
         return;
       }
 
-      // Check if already enrolled
       if (enrollmentStatus === "enrolled") {
         message.info("You are already enrolled in this course.");
         setEnrolling(false);
@@ -216,7 +214,6 @@ export default function CourseDetails() {
         await checkEnrollmentAndProgress();
         await fetchCourseProgress();
       } else if (res.status === 400 || res.status === 409) {
-        // Already enrolled - update state
         message.info("You are already enrolled in this course.");
         setEnrollmentStatus("enrolled");
         await checkEnrollmentAndProgress();
@@ -330,7 +327,6 @@ export default function CourseDetails() {
           lesson: lessonId,
         }),
       });
-      // Refresh progress from server after lesson completion is recorded
       await fetchCourseProgress();
     } catch (error) {
       console.error("Error updating progress:", error);
@@ -338,8 +334,6 @@ export default function CourseDetails() {
   };
 
   const handleAccessContent = (contentType) => {
-    // Content visibility is allowed for all users.
-    // Enrollment is still required for actions like progress/quiz.
     return true;
   };
 
@@ -349,7 +343,6 @@ export default function CourseDetails() {
     return "#1890ff";
   };
 
-  // Track progress percentage display
   const getTrackProgressMessage = () => {
     if (progress === 0) return "Not started yet";
     if (progress < 30) return "Just getting started! Keep going! ";
@@ -569,7 +562,7 @@ export default function CourseDetails() {
         >
           <div style={{ textAlign: "center" }}>
             <Title level={4} style={{ marginBottom: 16 }}>
-              📊 Your Learning Progress
+               Your Learning Progress
             </Title>
             <Progress 
               type="circle" 

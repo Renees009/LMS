@@ -140,6 +140,10 @@ export default function CourseCard({
   };
 
   const displayTitle = getCourseDetail("title") || getCourseDetail("course_title") || "Untitled";
+  const courseDescription =
+    getCourseDetail("description") ||
+    getCourseDetail("course_description") ||
+    getCourseDetail("summary");
   const resolvedCategory = getCourseDetail("category") || getCourseDetail("course_category");
   const resolvedDuration = getCourseDetail("duration") || getCourseDetail("course_duration");
   const resolvedLevel = getCourseDetail("level") || getCourseDetail("course_level");
@@ -163,8 +167,6 @@ export default function CourseCard({
     enrollmentMeta &&
     enrollmentMeta?.status !== "completed";
 
-  // In CourseCard.jsx, update these navigation calls:
-
 const handleEnroll = async () => {
   setLoading(true);
   
@@ -185,19 +187,17 @@ const handleEnroll = async () => {
     });
 
     if (!res.ok) {
-      // CHANGE THIS LINE
-      navigate(`/student/course/${actualCourseId}`);  // Added /student/
+      navigate(`/student/course/${actualCourseId}`);  
       setLoading(false);
       return;
     }
 
     message.success("Successfully enrolled! Redirecting to course...");
-    // CHANGE THIS LINE
-    navigate(`/student/course/${actualCourseId}`);  // Added /student/
+ 
+    navigate(`/student/course/${actualCourseId}`);  
   } catch (error) {
     console.error(error);
-    // CHANGE THIS LINE
-    navigate(`/student/course/${actualCourseId}`);  // Added /student/
+    navigate(`/student/course/${actualCourseId}`);  
     setLoading(false);
   }
 };
@@ -309,7 +309,6 @@ const handleContinueLearning = () => {
               {enrollmentCount} Enrolled
             </Text>
           </div>
-
           <Space wrap size={4}>
             {resolvedCategory && (
               <Tag color="blue" style={{ margin: 0, fontSize: 9, padding: "0 5px", lineHeight: "18px", borderRadius: 4 }}>
@@ -330,6 +329,12 @@ const handleContinueLearning = () => {
               </Tag>
             )}
           </Space>
+
+          {enrollmentMeta?.enrolled_at && (
+            <Text style={{ fontSize: 9, color: "#888", display: "block", marginTop: 4 }}>
+              Enrolled on: {new Date(enrollmentMeta.enrolled_at).toLocaleDateString()}
+            </Text>
+          )}
 
           {progressMeta?.progress_percentage !== undefined && isEnrolled && (
             <div style={{ marginTop: 2 }}>

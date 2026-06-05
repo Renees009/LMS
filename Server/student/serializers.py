@@ -1,10 +1,38 @@
+from django.db.utils import OperationalError, ProgrammingError
 from rest_framework import serializers
 
 from course.models import Course
-from course.serializers import CourseSerializer
 from tutor.models import TutorCourse
 
 from .models import StudentProfile, StudentCourseEnrollment, StudentCourseCompletion
+
+
+class CourseBriefSerializer(serializers.ModelSerializer):
+    thumbnail_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Course
+        fields = [
+            "id",
+            "title",
+            "thumbnail_url",
+            "category",
+            "duration",
+            "level",
+            "description",
+        ]
+
+    def get_thumbnail_url(self, obj):
+        if not obj.thumbnail:
+            return ""
+        request = self.context.get("request")
+        try:
+            if request:
+                return request.build_absolute_uri(obj.thumbnail.url)
+        except Exception:
+            pass
+        return obj.thumbnail.url
+
 
 class StudentProfileSerializer(serializers.ModelSerializer):
     profile_image_url = serializers.SerializerMethodField()
@@ -33,7 +61,8 @@ class StudentProfileSerializer(serializers.ModelSerializer):
 
 
 class StudentCourseEnrollmentSerializer(serializers.ModelSerializer):
-    course = CourseSerializer(read_only=True)
+    course = CourseBriefSerializer(read_only=True)
+    course_id = serializers.IntegerField(source="course.id", read_only=True)
     course_title = serializers.CharField(source="course.title", read_only=True)
     course_category = serializers.CharField(source="course.category", read_only=True)
     course_duration = serializers.IntegerField(source="course.duration", read_only=True)
@@ -51,11 +80,16 @@ class StudentCourseEnrollmentSerializer(serializers.ModelSerializer):
         return obj.course.lessons.count()
 
     def get_completed_lessons(self, obj):
-        from course.models import StudentLessonCompletion
-        return StudentLessonCompletion.objects.filter(
-            student_profile=obj.student_profile,
-            lesson__course=obj.course
-        ).count()
+        try:
+            from course.models import StudentLessonCompletion
+            return StudentLessonCompletion.objects.filter(
+                student_profile=obj.student_profile,
+                lesson__course=obj.course
+            ).count()
+        except (ProgrammingError, OperationalError):
+            return 0
+        except Exception:
+            return 0
 
     def get_progress(self, obj):
         total = self.get_total_lessons(obj)
@@ -70,6 +104,7 @@ class StudentCourseEnrollmentSerializer(serializers.ModelSerializer):
             "id",
             "student_profile",
             "course",
+            "course_id",
             "course_title",
             "course_category",
             "course_duration",

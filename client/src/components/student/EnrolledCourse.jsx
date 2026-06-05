@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, Col, Row, Spin, Typography, message, Button } from "antd";
 import { BookOutlined } from "@ant-design/icons";
 import CourseCard from "./CourseCard";
+import { getToken } from "../../auth/auth";
 
 const { Title, Text } = Typography;
 const API_BASE = "http://localhost:8000";
@@ -17,24 +18,38 @@ export default function EnrolledCourse() {
   const loadEnrollments = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/api/me/enrollments/`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("lms_token")}`,
-        },
-      });
-
-      if (!res.ok) {
-        message.error("Failed to load enrolled courses");
+      const token = getToken();
+      if (!token) {
+        message.error("Please sign in to view enrolled courses.");
         return;
       }
 
-      const data = await res.json();
+      const res = await fetch(`${API_BASE}/api/me/enrollments/`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        let errorMessage = "Failed to load enrolled courses.";
+        if (data) {
+          errorMessage = data.detail || data.error || JSON.stringify(data);
+        } else {
+          errorMessage = `${res.status} ${res.statusText}`;
+        }
+        console.error("Enrolled courses load failed:", res.status, errorMessage);
+        message.error(errorMessage);
+        return;
+      }
       const list = Array.isArray(data) ? data : data?.results || data?.enrollments || [];
       console.log("/api/me/enrollments response:", data);
       setEnrollments(list);
     } catch (e) {
-      message.error("Failed to load enrolled courses");
+      console.error("Error loading enrolled courses:", e);
+      message.error("Failed to load enrolled courses. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -82,7 +97,7 @@ export default function EnrolledCourse() {
           <>
             <Row gutter={[16, 16]}>
               {enrollments.map((enrollment) => (
-                <Col xs={24} sm={12} md={12} lg={8} xl={6} key={enrollment.id}>
+                <Col xs={24} sm={12} md={12} lg={8} xl={6} key={enrollment.id || `${enrollment.course?.id}-${enrollment.enrolled_at}` }>
                   <CourseCard
                     course={enrollment.course || enrollment}
                     enrollmentMeta={{
