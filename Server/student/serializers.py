@@ -61,8 +61,9 @@ class StudentProfileSerializer(serializers.ModelSerializer):
 
 
 class StudentCourseEnrollmentSerializer(serializers.ModelSerializer):
+    student_profile = serializers.PrimaryKeyRelatedField(read_only=True)
     course = CourseBriefSerializer(read_only=True)
-    course_id = serializers.IntegerField(source="course.id", read_only=True)
+    course_id = serializers.IntegerField(write_only=True, required=False)
     course_title = serializers.CharField(source="course.title", read_only=True)
     course_category = serializers.CharField(source="course.category", read_only=True)
     course_duration = serializers.IntegerField(source="course.duration", read_only=True)
@@ -116,6 +117,8 @@ class StudentCourseEnrollmentSerializer(serializers.ModelSerializer):
             "progress",
             "completed_lessons",
             "total_lessons",
+            "highest_quiz_score",
+            "highest_quiz_grade",
         ]
 
 

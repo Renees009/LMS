@@ -3,7 +3,7 @@ import { Modal, Button, message } from "antd";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-const CertificateGenerator = ({ visible, onClose, course, user, progressPercentage = 100 }) => {
+const CertificateGenerator = ({ visible, onClose, course, user, progressPercentage = 100, quizScore = null, quizGrade = null }) => {
   const certificateRef = useRef();
   const [generating, setGenerating] = useState(false);
   const [studentName, setStudentName] = useState("");
@@ -348,7 +348,7 @@ const CertificateGenerator = ({ visible, onClose, course, user, progressPercenta
               </span>{" "}
               level with a score of{" "}
               <span style={{ color: "#ffd700", fontWeight: "bold" }}>
-                {progressPercentage}%
+                {quizScore !== null && quizScore !== undefined ? `${quizScore}%` : `${progressPercentage}%`}
               </span>{" "}
               on{" "}
               <span style={{ color: "#ffd700", fontWeight: "bold" }}>
@@ -356,6 +356,14 @@ const CertificateGenerator = ({ visible, onClose, course, user, progressPercenta
               </span>
             </p>
           </div>
+
+          {quizGrade && (
+            <div style={{ marginTop: 8 }}>
+              <p style={{ fontSize: 14, color: "#ffd700", fontWeight: "600", margin: 0 }}>
+                Grade: {quizGrade}
+              </p>
+            </div>
+          )}
 
           <div
             style={{

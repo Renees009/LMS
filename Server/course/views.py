@@ -6,7 +6,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from course.models import Course, Lesson, StudentLessonCompletion
+from course.models import Course, Lesson, StudentLessonCompletion, Quiz, QuizQuestion
 from course.serializers import (
     CourseProgressSerializer,
     CourseSerializer,
@@ -163,8 +163,6 @@ class CourseCreateView(APIView):
             lesson.save(update_fields=["description", "video_url", "material_url"])
             created_lessons.append(lesson)
 
-
-        # Ensure lessons + their content are returned in the response
         lessons_payload = LessonSerializer(created_lessons, many=True).data
 
         return Response(
@@ -299,41 +297,29 @@ class CourseQuizView(APIView):
     def get(self, request, course_id: int):
         course = get_object_or_404(Course, id=course_id)
 
+        quiz = Quiz.objects.filter(course=course).order_by("-created_at").first()
+        if not quiz:
+            return Response({"detail": "No quiz available for this course."}, status=status.HTTP_404_NOT_FOUND)
+
+        questions = []
+        for q in quiz.questions.all():
+            questions.append({
+                "id": q.id,
+                "order": q.order,
+                "question": q.question,
+                "options": {
+                    "A": q.option_a,
+                    "B": q.option_b,
+                    "C": q.option_c,
+                    "D": q.option_d,
+                },
+            })
+
         quiz_payload = {
+            "quiz_id": quiz.id,
             "course_id": course.id,
-            "title": f"{course.title} Final Quiz",
-            "questions": [
-                {
-                    "question": "What is the primary topic of this course?",
-                    "options": [
-                        course.category,
-                        "General Knowledge",
-                        "Beginner Basics",
-                        "Advanced Techniques",
-                    ],
-                    "correct_answer": course.category,
-                },
-                {
-                    "question": "How many lessons does this course contain?",
-                    "options": [
-                        str(course.lessons.count()),
-                        "5",
-                        "10",
-                        "12",
-                    ],
-                    "correct_answer": str(course.lessons.count()),
-                },
-                {
-                    "question": "What skill level is this course designed for?",
-                    "options": [
-                        course.level,
-                        "Beginner",
-                        "Intermediate",
-                        "Expert",
-                    ],
-                    "correct_answer": course.level,
-                },
-            ],
+            "title": quiz.title,
+            "questions": questions,
         }
 
         return Response(quiz_payload, status=status.HTTP_200_OK)
@@ -358,6 +344,7 @@ class CourseQuizHighestScoreView(APIView):
             "highest_score": highest_score,
             "reattempt_count": attempt_count,
             "course_completed": course_completed,
+            "highest_score_grade": enrollment.highest_quiz_grade if enrollment else None,
         }
 
         return Response(payload, status=status.HTTP_200_OK)
@@ -369,15 +356,48 @@ class CourseQuizSubmitView(APIView):
     def post(self, request, course_id: int):
         profile = get_object_or_404(StudentProfile, user=request.user)
         course = get_object_or_404(Course, id=course_id)
+        answers = request.data.get("answers")
+        quiz_id = request.data.get("quiz_id")
 
-        score = request.data.get("score")
-        answers = request.data.get("answers", {})
+        if not answers and quiz_id is None:
+            raise ValidationError({"answers": "answers or quiz_id is required"})
+
+        score = None
+        total = 0
+        correct_count = 0
+        if quiz_id:
+            quiz = get_object_or_404(Quiz, id=quiz_id, course=course)
+            questions = list(quiz.questions.all())
+            total = len(questions)
+            for q in questions:
+                ans = answers.get(str(q.id)) if isinstance(answers, dict) else None
+                if ans and ans.upper() == (q.correct_option or '').upper():
+                    correct_count += 1
+
+            if total > 0:
+                score = int((correct_count / total) * 100)
 
         if score is None:
-            raise ValidationError({"score": "score is required"})
+            supplied = request.data.get("score")
+            if supplied is None:
+                raise ValidationError({"score": "score or answers required"})
+            score = int(supplied)
 
-        score = int(score)
-        passed = score >= 70
+        prev_attempts = StudentQuizAttempt.objects.filter(student_profile=profile, course=course)
+        attempt_number = prev_attempts.count() + 1
+
+        if attempt_number == 1:
+            grade = "O"
+        elif attempt_number == 2:
+            grade = "A+"
+        elif attempt_number == 3:
+            grade = "A"
+        elif attempt_number == 4:
+            grade = "B+"
+        else:
+            grade = "B"
+
+        passed = score > 60
 
         StudentQuizAttempt.objects.create(
             student_profile=profile,
@@ -385,7 +405,24 @@ class CourseQuizSubmitView(APIView):
             score=score,
             answers=answers,
             is_passed=passed,
+            grade=grade,
         )
+
+        enrollment = StudentCourseEnrollment.objects.filter(student_profile=profile, course=course).first()
+        if enrollment:
+            if score > (enrollment.highest_quiz_score or 0):
+                enrollment.highest_quiz_score = score
+                enrollment.highest_quiz_grade = grade
+                enrollment.save(update_fields=["highest_quiz_score", "highest_quiz_grade"]) 
+
+        if passed:
+            tutor_course = TutorCourse.objects.filter(course=course).first()
+            if tutor_course:
+                StudentCourseCompletion.objects.get_or_create(
+                    student_profile=profile,
+                    enrollment=enrollment,
+                    tutor_course=tutor_course,
+                )
 
         attempts = StudentQuizAttempt.objects.filter(student_profile=profile, course=course)
         highest_score = attempts.aggregate(Max("score"))["score__max"] or 0
@@ -401,6 +438,8 @@ class CourseQuizSubmitView(APIView):
                 "reattempt_count": attempt_count,
                 "course_completed": course_completed,
                 "passed": passed,
+                "grade": grade,
+                "attempt_score": score,
             },
             status=status.HTTP_201_CREATED,
         )

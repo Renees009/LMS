@@ -22,6 +22,8 @@ class StudentCourseEnrollmentAdmin(admin.ModelAdmin):
         "course",
         "status",
         "enrolled_at",
+        "highest_quiz_score",
+        "highest_quiz_grade",
     )
     list_filter = ("status", "enrolled_at", "course__category", "course__level")
     search_fields = (
@@ -32,6 +34,18 @@ class StudentCourseEnrollmentAdmin(admin.ModelAdmin):
         "course__level",
     )
     ordering = ("-enrolled_at",)
+    autocomplete_fields = ("student_profile", "course")
+
+
+from .models import StudentQuizAttempt
+
+
+@admin.register(StudentQuizAttempt)
+class StudentQuizAttemptAdmin(admin.ModelAdmin):
+    list_display = ("id", "student_profile", "course", "score", "grade", "is_passed", "attempted_at")
+    list_filter = ("is_passed", "attempted_at", "course__title")
+    search_fields = ("student_profile__student_name", "course__title")
+    ordering = ("-attempted_at",)
     autocomplete_fields = ("student_profile", "course")
 
 

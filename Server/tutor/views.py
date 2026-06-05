@@ -173,3 +173,52 @@ class TutorLessonUpdateView(APIView):
 
         return Response(TutorCourseLessonSerializer(lesson).data, status=status.HTTP_200_OK)
 
+
+class TutorQuizCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, course_id: int):
+        # course_id here should reference TutorCourse.id used in tutor endpoints in frontend
+        tutor_course = get_object_or_404(TutorCourse, id=course_id, tutor_profile__user=request.user)
+        course = tutor_course.course
+
+        title = request.data.get("title") or f"{course.title} Final Quiz"
+        questions = request.data.get("questions")
+        if not questions or not isinstance(questions, list):
+            raise ValidationError({"questions": "questions must be a list of question objects"})
+
+        if len(questions) < 10:
+            raise ValidationError({"questions": "At least 10 questions are required"})
+
+        # create quiz
+        from course.models import Quiz, QuizQuestion
+
+        quiz = Quiz.objects.create(course=course, title=title, tutor_created=True)
+
+        created = []
+        for idx, q in enumerate(questions, start=1):
+            question_text = q.get("question")
+            option_a = q.get("option_a")
+            option_b = q.get("option_b")
+            option_c = q.get("option_c")
+            option_d = q.get("option_d")
+            correct = q.get("correct_option")
+
+            if not question_text or not option_a or not option_b or not option_c or not option_d or not correct:
+                quiz.delete()
+                raise ValidationError({"questions": f"All fields required for question {idx}"})
+
+            qq = QuizQuestion.objects.create(
+                quiz=quiz,
+                order=idx,
+                question=question_text,
+                option_a=option_a,
+                option_b=option_b,
+                option_c=option_c,
+                option_d=option_d,
+                correct_option=correct,
+            )
+            created.append({"id": qq.id, "order": qq.order})
+
+        return Response({"quiz_id": quiz.id, "created_questions": created}, status=status.HTTP_201_CREATED)
+

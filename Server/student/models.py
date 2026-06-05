@@ -34,6 +34,8 @@ class StudentCourseEnrollment(models.Model):
     status = models.CharField(max_length=50, default="enrolled")
     progress = models.PositiveIntegerField(default=0)
     enrolled_at = models.DateField(auto_now_add=True)
+    highest_quiz_score = models.PositiveIntegerField(default=0)
+    highest_quiz_grade = models.CharField(max_length=10, blank=True, null=True)
 
     class Meta:
         unique_together = ("student_profile", "course")
@@ -56,6 +58,7 @@ class StudentQuizAttempt(models.Model):
     score = models.PositiveIntegerField()
     answers = models.JSONField(blank=True, null=True)
     is_passed = models.BooleanField(default=False)
+    grade = models.CharField(max_length=10, blank=True, null=True)
     attempted_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

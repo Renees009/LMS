@@ -4,6 +4,7 @@ from .views import (
     TutorEnrollmentByTutorCourseIdListView,
     TutorLessonUpdateView,
     TutorCoursesOwnedByMeListView,
+    TutorQuizCreateView,
 )
 
 urlpatterns = [
@@ -23,6 +24,12 @@ urlpatterns = [
         "courses/<int:course_id>/enrollments/",
         TutorEnrollmentByTutorCourseIdListView.as_view(),
         name="tutor-enrollments",
+    ),
+
+    path(
+        "courses/<int:course_id>/quiz/",
+        TutorQuizCreateView.as_view(),
+        name="tutor-create-quiz",
     ),
 ]
 

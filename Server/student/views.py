@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import ValidationError
@@ -108,16 +109,22 @@ class StudentMeEnrollmentListCreateView(generics.ListCreateAPIView):
             "student_profile",
         )
 
+    def create(self, request, *args, **kwargs):
+        try:
+            return super().create(request, *args, **kwargs)
+        except IntegrityError:
+            return Response(
+                {"detail": "You are already enrolled in this course."},
+                status=status.HTTP_409_CONFLICT,
+            )
 
     def perform_create(self, serializer):
-
         course_id = self.request.data.get("course") or self.request.data.get("course_id")
         if not course_id:
             raise ValidationError({"course": "course is required"})
 
         course = get_object_or_404(Course, id=course_id)
 
-       
         profile, _ = StudentProfile.objects.get_or_create(user=self.request.user, defaults={
             "student_name": self.request.user.username if getattr(self.request.user, 'is_authenticated', False) else "Student",
         })

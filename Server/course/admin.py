@@ -1,6 +1,12 @@
 from django.contrib import admin
 
 from .models import Course, Lesson, StudentLessonCompletion
+from .models import Quiz, QuizQuestion
+
+
+class QuizQuestionInline(admin.TabularInline):
+    model = QuizQuestion
+    extra = 1
 
 
 class LessonInline(admin.StackedInline):
@@ -36,5 +42,14 @@ class CourseAdmin(admin.ModelAdmin):
     ordering = ("-created_at",)
 
     inlines = [LessonInline]
+
+
+@admin.register(Quiz)
+class QuizAdmin(admin.ModelAdmin):
+    list_display = ("id", "title", "course", "tutor_created", "created_at")
+    list_filter = ("tutor_created", "created_at", "course__category")
+    search_fields = ("title", "course__title")
+    ordering = ("-created_at",)
+    inlines = [QuizQuestionInline]
 
 

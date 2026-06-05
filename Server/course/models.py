@@ -62,6 +62,42 @@ class Lesson(models.Model):
         return f"{self.course.title} - Lesson {self.order}: {self.title}"
 
 
+class Quiz(models.Model):
+    course = models.ForeignKey(
+        "course.Course",
+        on_delete=models.CASCADE,
+        related_name="quizzes",
+    )
+    title = models.CharField(max_length=255)
+    tutor_created = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.course.title} - Quiz: {self.title}"
+
+
+class QuizQuestion(models.Model):
+    quiz = models.ForeignKey(
+        "course.Quiz",
+        on_delete=models.CASCADE,
+        related_name="questions",
+    )
+    order = models.PositiveIntegerField()
+    question = models.TextField()
+    option_a = models.CharField(max_length=255)
+    option_b = models.CharField(max_length=255)
+    option_c = models.CharField(max_length=255)
+    option_d = models.CharField(max_length=255)
+    correct_option = models.CharField(max_length=1)
+
+    class Meta:
+        unique_together = ("quiz", "order")
+        ordering = ["order"]
+
+    def __str__(self):
+        return f"{self.quiz.course.title} - Q{self.order}: {self.question[:50]}"
+
+
 class StudentLessonCompletion(models.Model):
     student_profile = models.ForeignKey(
         "student.StudentProfile",

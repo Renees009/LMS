@@ -158,48 +158,23 @@ export default function CourseCard({
   
   const imageUrl = getThumbnailUrl();
 
+  const normalizedStatus = (enrollmentMeta?.status || "").toString().trim().toLowerCase();
   const isCourseCompleted =
-    completionMeta?.completed_date ||
-    enrollmentMeta?.status === "completed" ||
+    Boolean(completionMeta?.completed_date) ||
+    normalizedStatus === "completed" ||
     isCompleted;
 
   const isEnrolled =
     enrollmentMeta &&
-    enrollmentMeta?.status !== "completed";
+    normalizedStatus !== "completed";
 
 const handleEnroll = async () => {
-  setLoading(true);
-  
+  // Navigate to course detail page where enrollment can be completed
   if (!actualCourseId) {
-    message.error("Invalid course ID");
-    setLoading(false);
+    message.error("Course not found");
     return;
   }
-
-  try {
-    const res = await fetch(`${API_BASE}/api/me/enrollments/`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("lms_token")}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ course: actualCourseId }),
-    });
-
-    if (!res.ok) {
-      navigate(`/student/course/${actualCourseId}`);  
-      setLoading(false);
-      return;
-    }
-
-    message.success("Successfully enrolled! Redirecting to course...");
- 
-    navigate(`/student/course/${actualCourseId}`);  
-  } catch (error) {
-    console.error(error);
-    navigate(`/student/course/${actualCourseId}`);  
-    setLoading(false);
-  }
+  navigate(`/student/course/${actualCourseId}`);
 };
 
 const handleContinueLearning = () => {
@@ -443,6 +418,8 @@ const handleContinueLearning = () => {
           course={course}
           user={userData}
           progressPercentage={progressMeta?.progress_percentage || 100}
+          quizScore={enrollmentMeta?.highest_quiz_score}
+          quizGrade={enrollmentMeta?.highest_quiz_grade}
         />
       )}
     </>

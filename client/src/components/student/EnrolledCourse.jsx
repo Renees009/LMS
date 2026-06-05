@@ -46,7 +46,22 @@ export default function EnrolledCourse() {
       }
       const list = Array.isArray(data) ? data : data?.results || data?.enrollments || [];
       console.log("/api/me/enrollments response:", data);
-      setEnrollments(list);
+      // Normalize enrollments so that each item has a `course` object
+      const normalized = list.map((item) => {
+        if (item && item.course) return item;
+        // If API returned a course directly, wrap into an enrollment-like object
+        if (item && item.id && item.title) {
+          return { id: item.id, course: item };
+        }
+        return item;
+      });
+      const activeEnrollments = normalized.filter((item) => {
+        const status = item?.status || item?.course?.status;
+        return !["completed", "complete", "completed ", "Completed"].includes(
+          status?.toString().trim().toLowerCase()
+        );
+      });
+      setEnrollments(activeEnrollments);
     } catch (e) {
       console.error("Error loading enrolled courses:", e);
       message.error("Failed to load enrolled courses. Please try again.");
@@ -104,6 +119,8 @@ export default function EnrolledCourse() {
                       status: enrollment.status,
                       enrolled_at: enrollment.enrolled_at,
                       course_id: enrollment.course?.id || enrollment.course,
+                      highest_quiz_score: enrollment.highest_quiz_score,
+                      highest_quiz_grade: enrollment.highest_quiz_grade,
                     }}
                     progressMeta={{
                       progress_percentage: enrollment.progress ?? 0,
