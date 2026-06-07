@@ -97,39 +97,162 @@ class TutorEnrollmentByTutorCourseIdListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, course_id: int):
-       
-        tutor_course = get_object_or_404(
-            TutorCourse.objects.select_related("course", "tutor_profile"),
-            id=course_id,
-            tutor_profile__user=request.user,
+        # Support both Course.id and TutorCourse.id
+        tutor_course = TutorCourse.objects.filter(course_id=course_id, tutor_profile__user=request.user).first()
+        if not tutor_course:
+            tutor_course = get_object_or_404(TutorCourse, id=course_id, tutor_profile__user=request.user)
+
+        enrollments = (
+            tutor_course.course.enrollments.select_related("student_profile")
+            .order_by("-enrolled_at")
         )
 
-        completions = (
-            StudentCourseCompletion.objects.select_related(
-                "student_profile",
-                "enrollment",
-                "enrollment__course",
-                "tutor_course",
-                "tutor_course__tutor_profile",
-            )
-            .filter(tutor_course=tutor_course)
-            .order_by("-completed_at")
-        )
-
-        data = StudentCourseCompletionSerializer(completions, many=True).data
+        from student.serializers import StudentCourseEnrollmentSerializer
+        data = StudentCourseEnrollmentSerializer(
+            enrollments, many=True, context={"request": request}
+        ).data
         return Response(data, status=status.HTTP_200_OK)
+
+
+class TutorCourseUpdateDeleteView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def put(self, request, course_id: int):
+        # Support both Course.id and TutorCourse.id
+        tutor_course = TutorCourse.objects.filter(course_id=course_id, tutor_profile__user=request.user).first()
+        if not tutor_course:
+            tutor_course = get_object_or_404(TutorCourse, id=course_id, tutor_profile__user=request.user)
+
+        course = tutor_course.course
+
+        title = request.data.get("title")
+        category = request.data.get("category")
+        duration = request.data.get("duration")
+        level = request.data.get("level")
+        description = request.data.get("description")
+        thumbnail = request.FILES.get("thumbnail")
+
+        if title is not None:
+            course.title = title
+        if category is not None:
+            course.category = category
+        if duration is not None:
+            try:
+                course.duration = int(duration)
+            except Exception:
+                raise ValidationError({"duration": "must be an integer"})
+        if level is not None:
+            course.level = level
+        if description is not None:
+            course.description = description
+        if thumbnail:
+            course.thumbnail = thumbnail
+
+        course.save()
+
+        from course.serializers import CourseSerializer
+        return Response(CourseSerializer(course, context={"request": request}).data, status=status.HTTP_200_OK)
+
+    def delete(self, request, course_id: int):
+        # Support both Course.id and TutorCourse.id
+        tutor_course = TutorCourse.objects.filter(course_id=course_id, tutor_profile__user=request.user).first()
+        if not tutor_course:
+            tutor_course = get_object_or_404(TutorCourse, id=course_id, tutor_profile__user=request.user)
+
+        course = tutor_course.course
+        course_title = course.title
+        course.delete()
+
+        # Notify admin of course deletion
+        from auth.models import Notification
+        from django.contrib.auth.models import User
+        admins = User.objects.filter(is_superuser=True)
+        for admin in admins:
+            Notification.objects.create(
+                user=admin,
+                message=f"Tutor {request.user.username} deleted the course '{course_title}'."
+            )
+
+        return Response({"message": "Course deleted successfully"}, status=status.HTTP_200_OK)
+
+
+class TutorLessonCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, course_id: int):
+        # Support both Course.id and TutorCourse.id
+        tutor_course = TutorCourse.objects.filter(course_id=course_id, tutor_profile__user=request.user).first()
+        if not tutor_course:
+            tutor_course = get_object_or_404(TutorCourse, id=course_id, tutor_profile__user=request.user)
+
+        course = tutor_course.course
+
+        title = request.data.get("title")
+        description = request.data.get("description", "")
+        material_file = request.FILES.get("material")
+        video_file = request.FILES.get("video")
+
+        if not title:
+            raise ValidationError({"title": "title is required"})
+
+        # Get next order value
+        next_order = course.lessons.count() + 1
+
+        lesson = Lesson.objects.create(
+            course=course,
+            order=next_order,
+            title=title,
+            description=description,
+        )
+
+        if video_file:
+            ext = ""
+            if "." in video_file.name:
+                ext = video_file.name.split(".")[-1]
+            safe_course = slugify(course.title)[:50] or f"course_{course.id}"
+            safe_lesson = slugify(lesson.title)[:50] or f"lesson_{lesson.id}"
+            save_name = (
+                f"lesson_videos/course_{course.id}/{safe_course}_lesson_{lesson.id}_{safe_lesson}.{ext}"
+                if ext
+                else f"lesson_videos/course_{course.id}/{safe_course}_lesson_{lesson.id}_{safe_lesson}"
+            )
+            lesson.video_file = default_storage.save(save_name, video_file)
+
+        if material_file:
+            ext = ""
+            if "." in material_file.name:
+                ext = material_file.name.split(".")[-1]
+            safe_course = slugify(course.title)[:50] or f"course_{course.id}"
+            safe_lesson = slugify(lesson.title)[:50] or f"lesson_{lesson.id}"
+            save_name = (
+                f"lesson_materials/course_{course.id}/{safe_course}_lesson_{lesson.id}_{safe_lesson}.{ext}"
+                if ext
+                else f"lesson_materials/course_{course.id}/{safe_course}_lesson_{lesson.id}_{safe_lesson}"
+            )
+            lesson.material_file = default_storage.save(save_name, material_file)
+
+        lesson.save()
+
+        # Notify enrolled students about a new lesson
+        from auth.models import Notification
+        enrollments = tutor_course.course.enrollments.all()
+        for enrollment in enrollments:
+            Notification.objects.create(
+                user=enrollment.student_profile.user,
+                message=f"A new lesson '{title}' has been added to '{course.title}'."
+            )
+
+        return Response(TutorCourseLessonSerializer(lesson).data, status=status.HTTP_201_CREATED)
 
 
 class TutorLessonUpdateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def put(self, request, course_id: int, lesson_id: int):
-        # course_id is tutor_course.id (frontend uses tutor_course.id)
-        tutor_course = get_object_or_404(
-            TutorCourse.objects.select_related("course", "tutor_profile"),
-            id=course_id,
-            tutor_profile__user=request.user,
-        )
+        # Support both Course.id and TutorCourse.id
+        tutor_course = TutorCourse.objects.filter(course_id=course_id, tutor_profile__user=request.user).first()
+        if not tutor_course:
+            tutor_course = get_object_or_404(TutorCourse, id=course_id, tutor_profile__user=request.user)
 
         lesson = get_object_or_404(Lesson, id=lesson_id, course_id=tutor_course.course_id)
 
@@ -154,7 +277,7 @@ class TutorLessonUpdateView(APIView):
                 if ext
                 else f"lesson_videos/course_{tutor_course.course.id}/{safe_course}_lesson_{lesson.id}_{safe_lesson}"
             )
-            lesson.video_url = default_storage.save(save_name, video_file)
+            lesson.video_file = default_storage.save(save_name, video_file)
 
         if material_file:
             ext = ""
@@ -167,19 +290,44 @@ class TutorLessonUpdateView(APIView):
                 if ext
                 else f"lesson_materials/course_{tutor_course.course.id}/{safe_course}_lesson_{lesson.id}_{safe_lesson}"
             )
-            lesson.material_url = default_storage.save(save_name, material_file)
+            lesson.material_file = default_storage.save(save_name, material_file)
 
         lesson.save()
 
         return Response(TutorCourseLessonSerializer(lesson).data, status=status.HTTP_200_OK)
 
 
+class TutorLessonDeleteView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, course_id: int, lesson_id: int):
+        # Support both Course.id and TutorCourse.id
+        tutor_course = TutorCourse.objects.filter(course_id=course_id, tutor_profile__user=request.user).first()
+        if not tutor_course:
+            tutor_course = get_object_or_404(TutorCourse, id=course_id, tutor_profile__user=request.user)
+
+        lesson = get_object_or_404(Lesson, id=lesson_id, course_id=tutor_course.course_id)
+        deleted_order = lesson.order
+        lesson.delete()
+
+        # Reorder remaining lessons
+        subsequent_lessons = Lesson.objects.filter(course_id=tutor_course.course_id, order__gt=deleted_order).order_by("order")
+        for idx, les in enumerate(subsequent_lessons, start=deleted_order):
+            les.order = idx
+            les.save(update_fields=["order"])
+
+        return Response({"message": "Lesson deleted successfully"}, status=status.HTTP_200_OK)
+
+
 class TutorQuizCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, course_id: int):
-        # course_id here should reference TutorCourse.id used in tutor endpoints in frontend
-        tutor_course = get_object_or_404(TutorCourse, id=course_id, tutor_profile__user=request.user)
+        # Support both Course.id and TutorCourse.id
+        tutor_course = TutorCourse.objects.filter(course_id=course_id, tutor_profile__user=request.user).first()
+        if not tutor_course:
+            tutor_course = get_object_or_404(TutorCourse, id=course_id, tutor_profile__user=request.user)
+
         course = tutor_course.course
 
         title = request.data.get("title") or f"{course.title} Final Quiz"
@@ -187,11 +335,13 @@ class TutorQuizCreateView(APIView):
         if not questions or not isinstance(questions, list):
             raise ValidationError({"questions": "questions must be a list of question objects"})
 
-        if len(questions) < 10:
-            raise ValidationError({"questions": "At least 10 questions are required"})
+        if len(questions) < 3:
+            raise ValidationError({"questions": "At least 3 questions are required"})
 
-        # create quiz
         from course.models import Quiz, QuizQuestion
+
+        # Overwrite any existing quiz to edit/update
+        Quiz.objects.filter(course=course).delete()
 
         quiz = Quiz.objects.create(course=course, title=title, tutor_created=True)
 

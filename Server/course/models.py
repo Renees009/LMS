@@ -119,3 +119,25 @@ class StudentLessonCompletion(models.Model):
 
     def __str__(self):
         return f"{self.student_profile} completed {self.lesson}"
+
+
+class CourseComment(models.Model):
+    course = models.ForeignKey(
+        "course.Course",
+        on_delete=models.CASCADE,
+        related_name="comments",
+    )
+    student_profile = models.ForeignKey(
+        "student.StudentProfile",
+        on_delete=models.CASCADE,
+        related_name="course_comments",
+    )
+    rating = models.PositiveIntegerField()
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.student_profile.student_name} - {self.course.title} ({self.rating} stars)"

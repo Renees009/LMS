@@ -5,6 +5,9 @@ from .views import (
     TutorLessonUpdateView,
     TutorCoursesOwnedByMeListView,
     TutorQuizCreateView,
+    TutorCourseUpdateDeleteView,
+    TutorLessonCreateView,
+    TutorLessonDeleteView,
 )
 
 urlpatterns = [
@@ -15,9 +18,27 @@ urlpatterns = [
     ),
 
     path(
+        "courses/<int:course_id>/",
+        TutorCourseUpdateDeleteView.as_view(),
+        name="tutor-course-update-delete",
+    ),
+
+    path(
+        "courses/<int:course_id>/lessons/",
+        TutorLessonCreateView.as_view(),
+        name="tutor-lesson-create",
+    ),
+
+    path(
         "courses/<int:course_id>/lessons/<int:lesson_id>/",
         TutorLessonUpdateView.as_view(),
         name="tutor-lesson-update",
+    ),
+
+    path(
+        "courses/<int:course_id>/lessons/<int:lesson_id>/delete/",
+        TutorLessonDeleteView.as_view(),
+        name="tutor-lesson-delete",
     ),
 
     path(
@@ -32,5 +53,3 @@ urlpatterns = [
         name="tutor-create-quiz",
     ),
 ]
-
-

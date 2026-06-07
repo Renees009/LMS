@@ -1,17 +1,21 @@
+import logging
 import json
 from django.db.models import Max
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import ValidationError
+from django.core.files.storage import default_storage
+from django.utils.text import slugify
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from course.models import Course, Lesson, StudentLessonCompletion, Quiz, QuizQuestion
+from course.models import Course, Lesson, StudentLessonCompletion, Quiz, QuizQuestion, CourseComment
 from course.serializers import (
     CourseProgressSerializer,
     CourseSerializer,
     LessonCompletionSerializer,
     LessonSerializer,
+    CourseCommentSerializer,
 )
 
 from tutor.models import TutorCourse, TutorProfile
@@ -22,6 +26,8 @@ from student.models import (
     StudentQuizAttempt,
 )
 from student.serializers import StudentCourseCompletionSerializer
+
+logger = logging.getLogger(__name__)
 
 
 class CourseListView(generics.ListAPIView):
@@ -83,19 +89,14 @@ class CourseCreateView(APIView):
         if len(lessons_payload) < number_of_lessons:
             raise ValidationError({"lessons": "lessons length must match number_of_lessons"})
 
-        if thumbnail:
-            
-            pass
-        
         course = Course.objects.create(
-        title=title,
-        thumbnail=thumbnail,
-        category=category,
-        duration=duration,
-        level=level,
-        description=description,
-    )
-
+            title=title,
+            thumbnail=thumbnail,
+            category=category,
+            duration=duration,
+            level=level,
+            description=description,
+        )
 
         TutorCourse.objects.create(
             tutor_profile=tutor_profile,
@@ -120,11 +121,9 @@ class CourseCreateView(APIView):
             video_file = request.FILES.get(f"lesson_video_{i}")
             material_file = request.FILES.get(f"lesson_material_{i}")
 
-            from django.core.files.storage import default_storage
-            from django.utils.text import slugify
-
-
             lesson.description = lesson_description or ""
+            lesson.save()
+            
             if video_file:
                 lesson.video_file = video_file
 
@@ -132,35 +131,6 @@ class CourseCreateView(APIView):
                 lesson.material_file = material_file
 
             lesson.save()
-            if video_file:
-                ext = ""
-                if "." in video_file.name:
-                    ext = video_file.name.split(".")[-1]
-
-                safe_course = slugify(course.title)[:50] or f"course_{course.id}"
-                safe_lesson = slugify(lesson.title)[:50] or f"lesson_{lesson.id}"
-                save_name = (
-                    f"lesson_videos/course_{course.id}/{safe_course}_lesson_{lesson.id}_{safe_lesson}.{ext}"
-                    if ext
-                    else f"lesson_videos/course_{course.id}/{safe_course}_lesson_{lesson.id}_{safe_lesson}"
-                )
-                lesson.video_url = default_storage.save(save_name, video_file)
-
-            if material_file:
-                ext = ""
-                if "." in material_file.name:
-                    ext = material_file.name.split(".")[-1]
-
-                safe_course = slugify(course.title)[:50] or f"course_{course.id}"
-                safe_lesson = slugify(lesson.title)[:50] or f"lesson_{lesson.id}"
-                save_name = (
-                    f"lesson_materials/course_{course.id}/{safe_course}_lesson_{lesson.id}_{safe_lesson}.{ext}"
-                    if ext
-                    else f"lesson_materials/course_{course.id}/{safe_course}_lesson_{lesson.id}_{safe_lesson}"
-                )
-                lesson.material_url = default_storage.save(save_name, material_file)
-
-            lesson.save(update_fields=["description", "video_url", "material_url"])
             created_lessons.append(lesson)
 
         lessons_payload = LessonSerializer(created_lessons, many=True).data
@@ -194,37 +164,97 @@ class LessonCompletionCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        lesson_id = request.data.get("lesson") or request.data.get("lesson_id")
+        # Ensure we get an integer lesson ID
+        raw_lesson_id = request.data.get("lesson") or request.data.get("lesson_id")
+        try:
+            lesson_id = int(raw_lesson_id)
+        except (TypeError, ValueError):
+            raise ValidationError({"lesson": "A valid lesson ID is required"})
+
         if not lesson_id:
             raise ValidationError({"lesson": "lesson is required"})
 
         lesson = get_object_or_404(Lesson, id=lesson_id)
+        profile = get_object_or_404(StudentProfile, user=request.user)
 
-        profile, _ = StudentProfile.objects.get_or_create(
-            user=request.user,
-            defaults={"student_name": getattr(request.user, "username", "Student")},
-        )
+        new_progress = 0.0 # Initialize as float
+        next_lesson_id = None
+        completed_lesson_ids = []
+        obj_id = None
+        is_newly_created = False
 
-        obj, created = StudentLessonCompletion.objects.get_or_create(
-            student_profile=profile,
-            lesson=lesson,
-        )
+        try:
+            # Use get_or_create to avoid IntegrityErrors with unique_together constraints
+            logger.debug(f"LessonCompletionCreateView: Processing completion for user={request.user.username} (profile={profile.id}), lesson={lesson.id} ('{lesson.title}'), course={lesson.course_id}")
 
-        enrollment = StudentCourseEnrollment.objects.filter(
-            student_profile=profile,
-            course=lesson.course,
-        ).first()
-
-        if enrollment:
-            completed_count = StudentLessonCompletion.objects.filter(
+            obj, is_newly_created = StudentLessonCompletion.objects.get_or_create(
                 student_profile=profile,
-                lesson__course=lesson.course,
-            ).count()
-            total_lessons = lesson.course.lessons.count()
-            enrollment.progress = int((completed_count / total_lessons) * 100) if total_lessons else 0
-            enrollment.save(update_fields=["progress"])
+                lesson=lesson,
+            )
+            obj_id = obj.id
 
-        return Response(LessonCompletionSerializer(obj).data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+            # Always fetch completed IDs for the current course to sync UI accurately
+            completions_qs = StudentLessonCompletion.objects.filter(
+                student_profile=profile,
+                lesson__course_id=lesson.course_id
+            )
+            
+            completed_lesson_ids = list(completions_qs.values_list('lesson_id', flat=True))
+            
+            # Safety check: Ensure the current lesson is counted even if DB reflection is slow
+            logger.debug(f"  Initial completed_lesson_ids from DB query: {completed_lesson_ids}")
+            if lesson.id not in completed_lesson_ids:
+                completed_lesson_ids.append(lesson.id)
+                logger.debug(f"  Lesson {lesson.id} not in initial list, appended. New list: {completed_lesson_ids}")
+                
+            completed_count = len(completed_lesson_ids)
+            
+            # Calculate progress accurately based on total lessons in the course
+            total_lessons = Lesson.objects.filter(course_id=lesson.course_id).count()
+            
+            logger.debug(f"  Final completed_count: {completed_count}")
+            logger.debug(f"  Total lessons in course {lesson.course_id}: {total_lessons}")
+
+            if total_lessons > 0:
+                # Use float division for accuracy
+                new_progress = min(100.0, (float(completed_count) / float(total_lessons)) * 100.0)
+            else:
+                new_progress = 0.0 # Ensure it's float
+
+            # Sync with the enrollment record
+            enrollment = StudentCourseEnrollment.objects.filter(
+                student_profile=profile,
+                course_id=lesson.course_id,
+            ).first()
+
+            if enrollment:
+                # Use a safer way to save progress to avoid 500 if model/DB are out of sync
+                if hasattr(enrollment, 'progress'):
+                    try:
+                        enrollment.progress = int(new_progress)
+                        enrollment.save(update_fields=["progress"])
+                    except Exception as e:
+                        logger.warning(f"Database error saving progress: {e}")
+            
+            # Find the next lesson for UX guidance
+            next_lesson = Lesson.objects.filter(
+                course_id=lesson.course_id,
+                order__gt=lesson.order or 0
+            ).order_by('order').first()
+            if next_lesson:
+                next_lesson_id = next_lesson.id
+        except Exception as e:
+            logger.exception(f"Error in LessonCompletionCreateView: {e}")
+
+        response_data = {
+            "id": obj_id,
+            "lesson": lesson.id,
+            "completed_lesson_ids": completed_lesson_ids,
+            "progress_percentage": new_progress,
+            "next_lesson_id": next_lesson_id
+        }
+
+        return Response(response_data, status=status.HTTP_201_CREATED if is_newly_created else status.HTTP_200_OK)
 
 
 class CourseProgressView(APIView):
@@ -233,9 +263,12 @@ class CourseProgressView(APIView):
     def get(self, request, course_id: int):
         profile = get_object_or_404(StudentProfile, user=request.user)
 
+        logger.debug(f"CourseProgressView: Fetching progress for user={request.user.username} (profile={profile.id}), course={course_id}")
         lessons_qs = Lesson.objects.filter(course_id=course_id)
         total = lessons_qs.count()
+        logger.debug(f"  Total lessons in course {course_id}: {total}")
         if total == 0:
+            logger.debug(f"  No lessons found for course {course_id}, returning 0% progress.")
             return Response(
                 {
                     "course_id": course_id,
@@ -257,15 +290,20 @@ class CourseProgressView(APIView):
         )
 
         completed = len(completed_lesson_ids)
-        progress_percentage = (completed / total) * 100.0
+        progress_percentage = (float(completed) / float(total)) * 100.0
 
         enrollment = StudentCourseEnrollment.objects.filter(
             student_profile=profile,
             course_id=course_id,
         ).first()
-        if enrollment and enrollment.progress != int(progress_percentage):
-            enrollment.progress = int(progress_percentage)
-            enrollment.save(update_fields=["progress"])
+        
+        if enrollment:
+            try:
+                if hasattr(enrollment, 'progress') and enrollment.progress != int(progress_percentage):
+                    enrollment.progress = int(progress_percentage)
+                    enrollment.save(update_fields=["progress"])
+            except Exception as e:
+                logger.exception("Syncing progress to enrollment failed")
 
         next_lesson = (
             lessons_qs.exclude(id__in=completed_lesson_ids)
@@ -339,6 +377,11 @@ class CourseQuizHighestScoreView(APIView):
             student_profile=profile,
             enrollment__course=course,
         ).exists()
+
+        enrollment = StudentCourseEnrollment.objects.filter(
+            student_profile=profile,
+            course=course,
+        ).first()
 
         payload = {
             "highest_score": highest_score,
@@ -491,3 +534,60 @@ class CourseContinueView(APIView):
 
         return Response({"next_lesson": LessonSerializer(next_lesson).data}, status=status.HTTP_200_OK)
 
+
+class CourseCommentListCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, course_id: int):
+        comments = CourseComment.objects.filter(course_id=course_id).order_by("-created_at")
+        serializer = CourseCommentSerializer(comments, many=True, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, course_id: int):
+        course = get_object_or_404(Course, id=course_id)
+        profile = get_object_or_404(StudentProfile, user=request.user)
+
+        # Ensure the student is enrolled
+        is_enrolled = StudentCourseEnrollment.objects.filter(
+            student_profile=profile,
+            course=course,
+        ).exists()
+
+        if not is_enrolled:
+            return Response(
+                {"detail": "You must be enrolled in the course to leave a rating/comment."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        rating = request.data.get("rating")
+        comment = request.data.get("comment", "")
+
+        if not rating:
+            raise ValidationError({"rating": "Rating is required"})
+
+        try:
+            rating = int(rating)
+            if rating < 1 or rating > 5:
+                raise ValueError()
+        except ValueError:
+            raise ValidationError({"rating": "Rating must be an integer between 1 and 5"})
+
+        obj = CourseComment.objects.create(
+            course=course,
+            student_profile=profile,
+            rating=rating,
+            comment=comment,
+        )
+
+        # Create a notification for the tutor if possible
+        tutor_course = TutorCourse.objects.filter(course=course).first()
+        if tutor_course and tutor_course.tutor_profile:
+            tutor_user = tutor_course.tutor_profile.user
+            from auth.models import Notification
+            Notification.objects.create(
+                user=tutor_user,
+                message=f"Student {profile.student_name} added a rating of {rating} to your course '{course.title}'."
+            )
+
+        serializer = CourseCommentSerializer(obj, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

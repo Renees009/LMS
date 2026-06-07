@@ -134,14 +134,9 @@ class StudentCourseCompletionSerializer(serializers.ModelSerializer):
     completed_date = serializers.DateField(source="completed_at", read_only=True)
 
     title = serializers.CharField(source="enrollment.course.title", read_only=True)
-    thumbnail_url = serializers.CharField(source="enrollment.course.thumbnail_url", read_only=True, allow_blank=True)
-
-    course_thumbnail_url = serializers.CharField(
-        source="enrollment.course.thumbnail_url",
-        read_only=True,
-        allow_blank=True,
-    )
-
+    
+    thumbnail_url = serializers.SerializerMethodField()
+    course_thumbnail_url = serializers.SerializerMethodField()
 
     category = serializers.CharField(source="enrollment.course.category", read_only=True)
     duration = serializers.IntegerField(source="enrollment.course.duration", read_only=True)
@@ -171,5 +166,20 @@ class StudentCourseCompletionSerializer(serializers.ModelSerializer):
         ]
 
         read_only_fields = fields
+
+    def get_thumbnail_url(self, obj):
+        course = obj.enrollment.course
+        if not course.thumbnail:
+            return ""
+        request = self.context.get("request")
+        try:
+            if request:
+                return request.build_absolute_uri(course.thumbnail.url)
+        except Exception:
+            pass
+        return course.thumbnail.url
+
+    def get_course_thumbnail_url(self, obj):
+        return self.get_thumbnail_url(obj)
 
 

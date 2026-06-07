@@ -37,7 +37,8 @@ import {
 const { Title, Text, Paragraph } = Typography;
 const { Panel } = Collapse;
 
-const API_BASE = "http://localhost:8000";
+// Consider moving this to an .env file for production
+const API_BASE = import.meta.env?.VITE_API_URL || "http://localhost:8000";
 
 export default function CourseDetails() {
   const { courseId } = useParams();
@@ -52,6 +53,7 @@ export default function CourseDetails() {
   const [activeKeys, setActiveKeys] = useState([]);
   const [isStartingLearning, setIsStartingLearning] = useState(false);
   const [isStartingQuiz, setIsStartingQuiz] = useState(false);
+  const [nextLessonId, setNextLessonId] = useState(null);
   const [quizInfo, setQuizInfo] = useState(null);
 
   useEffect(() => {
@@ -190,8 +192,18 @@ export default function CourseDetails() {
 
       if (res.ok) {
         const data = await res.json();
-        setProgress(Math.round(data.progress_percentage) || 0);
-        setCompletedLessons(data.completed_lesson_ids || []);
+        const serverPercentage = (data.progress_percentage !== undefined && data.progress_percentage !== null)
+          ? Math.round(data.progress_percentage)
+          : 0;
+        
+        const completedIds = (data.completed_lesson_ids || []).map(id => Number(id));
+        const totalLessonsCount = lessons.length || (course?.lessons?.length) || 0;
+        const localPercentage = totalLessonsCount > 0 ? Math.round((completedIds.length / totalLessonsCount) * 100) : 0;
+
+        setProgress(serverPercentage > 0 ? serverPercentage : localPercentage);
+        // Ensure all IDs are stored as Numbers for consistent 'includes' checks
+        setCompletedLessons(completedIds);
+        setNextLessonId(data.next_lesson_id);
       }
     } catch (error) {
       console.error("Error fetching course progress:", error);
@@ -306,7 +318,7 @@ export default function CourseDetails() {
       return;
     }
     setIsStartingQuiz(true);
-    navigate(`/student/quiz/${courseId}`);
+    navigate(`/student/quiz/${courseId}`); // Consistent route
   };
 
   const handleContinueLearning = () => {
@@ -326,22 +338,19 @@ export default function CourseDetails() {
       });
       return;
     }
-    navigate(`/quiz/${courseId}`);
+    navigate(`/student/quiz/${courseId}`);
   };
 
   const handleLessonComplete = async (lessonId) => {
     if (enrollmentStatus !== "enrolled") {
-      Modal.confirm({
+      Modal.warning({
         title: "Enrollment Required",
         content: "Please enroll in the course to mark lessons as complete.",
-        okText: "Enroll Now",
-        cancelText: "Cancel",
-        onOk: handleEnroll,
       });
       return;
     }
 
-    if (completedLessons.includes(lessonId)) return;
+    if (completedLessons.includes(Number(lessonId))) return;
 
     try {
       const token = localStorage.getItem("lms_token");
@@ -357,41 +366,73 @@ export default function CourseDetails() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          lesson: lessonId,
-          lesson_id: lessonId,
+          lesson: parseInt(lessonId),
+          course: parseInt(courseId),
+          lesson_id: Number(lessonId),
+          course_id: Number(courseId),
         }),
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        const fallback = await res.text().catch(() => "");
-        if (res.status === 401 || res.status === 403) {
-          message.error("Session expired or unauthorized. Please sign in again.");
+          if (res.status === 401 || res.status === 403) {
+              message.error("Session expired or unauthorized. Please sign in again.");
+              return;
+          }
+          
+          const errText = await res.text().catch(() => "");
+          let err = {};
+          if (errText && errText.trim().startsWith('{')) {
+              try { 
+                  err = JSON.parse(errText); 
+              } catch(e) { 
+                  err = { detail: "An unexpected server error occurred." }; 
+              }
+          } else {
+              err = { detail: "The server encountered an error and could not process your request." };
+          }
+          
+          message.error(
+              err.error || err.detail || err.lesson || "Failed to mark lesson as complete. Please try again later."
+          );
           return;
-        }
-        message.error(
-          err?.error || err?.detail || err?.lesson || fallback || "Failed to update lesson progress. Please try again."
-        );
-        return;
       }
 
-      const newCompletedLessons = [...completedLessons, lessonId];
-      setCompletedLessons(newCompletedLessons);
+      const data = await res.json();
+      
+      // Merge server data with local state to ensure the current lesson is accounted for
+      const serverCompletedIds = (data.completed_lesson_ids || []).map(id => Number(id));
+      const updatedList = Array.from(new Set([...completedLessons, ...serverCompletedIds, Number(lessonId)]));
+      
+      setCompletedLessons(updatedList);
+      setNextLessonId(data.next_lesson_id || null);
+      
+      // Calculate total lessons and local progress fallback
+      const totalLessonsCount = lessons.length || (course?.lessons?.length) || 0;
+      const localProgress = totalLessonsCount > 0 ? Math.round((updatedList.length / totalLessonsCount) * 100) : 0;
+      
+      const serverProgress = (data.progress_percentage !== undefined && data.progress_percentage !== null)
+        ? Math.round(parseFloat(data.progress_percentage))
+        : 0;
 
-      const totalLessons = course?.lessons?.length || 1;
-      const newProgress = Math.min(100, Math.floor((newCompletedLessons.length / totalLessons) * 100));
-      setProgress(newProgress);
+      // Use server progress if it's positive, otherwise fall back to local calculation
+      let currentProgress;
+      if (serverProgress > 0) {
+        currentProgress = serverProgress;
+      } else if (totalLessonsCount > 0) {
+        currentProgress = localProgress;
+      } else {
+        currentProgress = progress;
+      }
 
-      message.success(`Lesson completed! Progress: ${newProgress}%`);
-      await fetchCourseProgress();
+      setProgress(currentProgress);
+      message.success(`Lesson marked as complete! (${currentProgress}%)`);
+
+      // Silently refresh progress details in the background
+      fetchCourseProgress().catch(() => null);
     } catch (error) {
       console.error("Error updating progress:", error);
       message.error("Network error - Unable to save lesson progress.");
     }
-  };
-
-  const handleAccessContent = (contentType) => {
-    return true;
   };
 
   const getProgressColor = () => {
@@ -703,8 +744,8 @@ export default function CourseDetails() {
                 expandIconPosition="end"
               >
                 {lessons.map((lesson, index) => {
-                  const isCompleted = completedLessons.includes(lesson.id);
-                  const canAccess = true;
+                  const isCompleted = completedLessons.includes(Number(lesson.id));
+                  const canAccess = enrollmentStatus === "enrolled";
 
                   return (
                     <Panel
@@ -740,16 +781,27 @@ export default function CourseDetails() {
                             Video Content
                           </Text>
                           <div style={{ marginTop: 8 }}>
-                            {lesson.video_url ? (
+                            {canAccess && lesson.video_url ? (
                               <video 
                                 controls 
                                 style={{ width: "100%", borderRadius: 12, maxHeight: 360 }} 
                                 src={lesson.video_url}
                                 poster={course.thumbnail_url}
-                                onEnded={() => handleLessonComplete(lesson.id)}
+                                onEnded={() => handleLessonComplete(Number(lesson.id))}
                               >
                                 Your browser does not support the video tag.
                               </video>
+                            ) : !canAccess ? (
+                              <div style={{ 
+                                background: "#f5f5f5", 
+                                padding: 30, 
+                                textAlign: "center", 
+                                borderRadius: 12,
+                                border: "1px dashed #d9d9d9"
+                              }}>
+                                <LockOutlined style={{ fontSize: 32, color: "#bfbfbf", marginBottom: 8 }} />
+                                <p style={{ margin: 0, color: "#8c8c8c" }}>Enroll in this course to unlock video content</p>
+                              </div>
                             ) : (
                               <div style={{ 
                                 background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
@@ -771,7 +823,7 @@ export default function CourseDetails() {
                             Course Material
                           </Text>
                           <div>
-                            {lesson.material_url ? (
+                            {canAccess && lesson.material_url ? (
                               <Button 
                                 icon={<FilePdfOutlined />} 
                                 href={lesson.material_url} 
@@ -782,7 +834,9 @@ export default function CourseDetails() {
                                 Download Lesson Material
                               </Button>
                             ) : (
-                              <Text type="secondary" style={{ fontSize: 13 }}>No material available for this lesson</Text>
+                              <Text type="secondary" style={{ fontSize: 13 }}>
+                                {!canAccess ? "Enroll to access materials" : "No material available for this lesson"}
+                              </Text>
                             )}
                           </div>
                         </div>
@@ -791,7 +845,7 @@ export default function CourseDetails() {
                           <Button
                             type="primary"
                             icon={<CheckCircleOutlined />}
-                            onClick={() => handleLessonComplete(lesson.id)}
+                            onClick={() => handleLessonComplete(Number(lesson.id))}
                             size="small"
                             style={{ 
                               marginTop: 4,

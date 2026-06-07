@@ -21,8 +21,9 @@ def _make_jwt_tokens_for_user(user: User):
 
 
 def _get_user_role(user: User):
-
-    if hasattr(user, 'studentprofile'):
+    if user.is_superuser or user.is_staff:
+        return "admin"
+    elif hasattr(user, 'studentprofile'):
         return "student"
     elif hasattr(user, 'tutorprofile'):
         return "tutor"
@@ -171,5 +172,31 @@ class TutorPasswordChangeView(APIView):
         user.save(update_fields=["password"])
 
         return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
+
+
+class NotificationListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from auth.models import Notification
+        notifications = Notification.objects.filter(user=request.user).order_by("-created_at")[:50]
+        data = []
+        for n in notifications:
+            data.append({
+                "id": n.id,
+                "message": n.message,
+                "is_read": n.is_read,
+                "created_at": n.created_at.isoformat(),
+            })
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class NotificationMarkReadView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        from auth.models import Notification
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return Response({"message": "Notifications marked as read"}, status=status.HTTP_200_OK)
 
 
