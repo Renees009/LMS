@@ -136,7 +136,7 @@ export default function StudentProfile() {
       style={{
         padding: "30px",
         minHeight: "100vh",
-        backgroundColor: "#f8fafc",
+        
       }}
     >
       <Card
@@ -146,7 +146,7 @@ export default function StudentProfile() {
           borderRadius: "12px",
         }}
       >
-        <Title level={2} style={{ textAlign: "center", color: "#1e293b" }}>
+        <Title level={2} style={{ textAlign: "center",}}>
           YOUR PROFILE
         </Title>
 

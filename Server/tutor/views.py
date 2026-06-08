@@ -74,13 +74,12 @@ class TutorCourseByCourseIdListView(generics.ListAPIView):
 class TutorCoursesOwnedByMeListView(generics.ListAPIView):
     """List courses owned by the logged-in tutor."""
 
-    serializer_class = None  # set below to avoid circular import
+    serializer_class = None  
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         from tutor.models import TutorCourse as TutorCourseModel
 
-        # TutorCourse model FK: tutor_profile -> TutorProfile -> user
         return (
             TutorCourseModel.objects.select_related("course")
             .filter(tutor_profile__user=self.request.user)
@@ -97,7 +96,6 @@ class TutorEnrollmentByTutorCourseIdListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, course_id: int):
-        # Support both Course.id and TutorCourse.id
         tutor_course = TutorCourse.objects.filter(course_id=course_id, tutor_profile__user=request.user).first()
         if not tutor_course:
             tutor_course = get_object_or_404(TutorCourse, id=course_id, tutor_profile__user=request.user)
@@ -118,7 +116,6 @@ class TutorCourseUpdateDeleteView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def put(self, request, course_id: int):
-        # Support both Course.id and TutorCourse.id
         tutor_course = TutorCourse.objects.filter(course_id=course_id, tutor_profile__user=request.user).first()
         if not tutor_course:
             tutor_course = get_object_or_404(TutorCourse, id=course_id, tutor_profile__user=request.user)
@@ -154,7 +151,6 @@ class TutorCourseUpdateDeleteView(APIView):
         return Response(CourseSerializer(course, context={"request": request}).data, status=status.HTTP_200_OK)
 
     def delete(self, request, course_id: int):
-        # Support both Course.id and TutorCourse.id
         tutor_course = TutorCourse.objects.filter(course_id=course_id, tutor_profile__user=request.user).first()
         if not tutor_course:
             tutor_course = get_object_or_404(TutorCourse, id=course_id, tutor_profile__user=request.user)
@@ -163,7 +159,6 @@ class TutorCourseUpdateDeleteView(APIView):
         course_title = course.title
         course.delete()
 
-        # Notify admin of course deletion
         from auth.models import Notification
         from django.contrib.auth.models import User
         admins = User.objects.filter(is_superuser=True)
@@ -180,7 +175,6 @@ class TutorLessonCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, course_id: int):
-        # Support both Course.id and TutorCourse.id
         tutor_course = TutorCourse.objects.filter(course_id=course_id, tutor_profile__user=request.user).first()
         if not tutor_course:
             tutor_course = get_object_or_404(TutorCourse, id=course_id, tutor_profile__user=request.user)
@@ -195,7 +189,6 @@ class TutorLessonCreateView(APIView):
         if not title:
             raise ValidationError({"title": "title is required"})
 
-        # Get next order value
         next_order = course.lessons.count() + 1
 
         lesson = Lesson.objects.create(
@@ -233,7 +226,6 @@ class TutorLessonCreateView(APIView):
 
         lesson.save()
 
-        # Notify enrolled students about a new lesson
         from auth.models import Notification
         enrollments = tutor_course.course.enrollments.all()
         for enrollment in enrollments:
@@ -249,7 +241,7 @@ class TutorLessonUpdateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def put(self, request, course_id: int, lesson_id: int):
-        # Support both Course.id and TutorCourse.id
+       
         tutor_course = TutorCourse.objects.filter(course_id=course_id, tutor_profile__user=request.user).first()
         if not tutor_course:
             tutor_course = get_object_or_404(TutorCourse, id=course_id, tutor_profile__user=request.user)
@@ -301,7 +293,7 @@ class TutorLessonDeleteView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, course_id: int, lesson_id: int):
-        # Support both Course.id and TutorCourse.id
+        
         tutor_course = TutorCourse.objects.filter(course_id=course_id, tutor_profile__user=request.user).first()
         if not tutor_course:
             tutor_course = get_object_or_404(TutorCourse, id=course_id, tutor_profile__user=request.user)
@@ -310,7 +302,7 @@ class TutorLessonDeleteView(APIView):
         deleted_order = lesson.order
         lesson.delete()
 
-        # Reorder remaining lessons
+       
         subsequent_lessons = Lesson.objects.filter(course_id=tutor_course.course_id, order__gt=deleted_order).order_by("order")
         for idx, les in enumerate(subsequent_lessons, start=deleted_order):
             les.order = idx
@@ -323,7 +315,6 @@ class TutorQuizCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, course_id: int):
-        # Support both Course.id and TutorCourse.id
         tutor_course = TutorCourse.objects.filter(course_id=course_id, tutor_profile__user=request.user).first()
         if not tutor_course:
             tutor_course = get_object_or_404(TutorCourse, id=course_id, tutor_profile__user=request.user)
@@ -340,7 +331,6 @@ class TutorQuizCreateView(APIView):
 
         from course.models import Quiz, QuizQuestion
 
-        # Overwrite any existing quiz to edit/update
         Quiz.objects.filter(course=course).delete()
 
         quiz = Quiz.objects.create(course=course, title=title, tutor_created=True)

@@ -103,7 +103,7 @@ export default function AddCourse() {
   return (
     <div
       style={{
-        background: "#f0f2f6",
+
         minHeight: "100vh",
         padding: "32px 24px",
       }}
@@ -118,7 +118,7 @@ export default function AddCourse() {
           style={{
             borderRadius: 16,
             boxShadow: "0 4px 12px rgba(0,0,0,0.15)", 
-            border: "1px solid #d9d9d9", 
+        
           }}
           styles={{ body: { padding: "32px" } }}
         >
@@ -142,7 +142,6 @@ export default function AddCourse() {
               level={3}
               style={{
                 margin: 0,
-                color: "#1a1a1a",
                 fontWeight: 600,
               }}
             >

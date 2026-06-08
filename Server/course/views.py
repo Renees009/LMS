@@ -164,7 +164,6 @@ class LessonCompletionCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        # Ensure we get an integer lesson ID
         raw_lesson_id = request.data.get("lesson") or request.data.get("lesson_id")
         try:
             lesson_id = int(raw_lesson_id)
@@ -177,14 +176,13 @@ class LessonCompletionCreateView(APIView):
         lesson = get_object_or_404(Lesson, id=lesson_id)
         profile = get_object_or_404(StudentProfile, user=request.user)
 
-        new_progress = 0.0 # Initialize as float
+        new_progress = 0.0 
         next_lesson_id = None
         completed_lesson_ids = []
         obj_id = None
         is_newly_created = False
 
         try:
-            # Use get_or_create to avoid IntegrityErrors with unique_together constraints
             logger.debug(f"LessonCompletionCreateView: Processing completion for user={request.user.username} (profile={profile.id}), lesson={lesson.id} ('{lesson.title}'), course={lesson.course_id}")
 
             obj, is_newly_created = StudentLessonCompletion.objects.get_or_create(
@@ -193,7 +191,6 @@ class LessonCompletionCreateView(APIView):
             )
             obj_id = obj.id
 
-            # Always fetch completed IDs for the current course to sync UI accurately
             completions_qs = StudentLessonCompletion.objects.filter(
                 student_profile=profile,
                 lesson__course_id=lesson.course_id
@@ -201,7 +198,6 @@ class LessonCompletionCreateView(APIView):
             
             completed_lesson_ids = list(completions_qs.values_list('lesson_id', flat=True))
             
-            # Safety check: Ensure the current lesson is counted even if DB reflection is slow
             logger.debug(f"  Initial completed_lesson_ids from DB query: {completed_lesson_ids}")
             if lesson.id not in completed_lesson_ids:
                 completed_lesson_ids.append(lesson.id)
@@ -209,26 +205,21 @@ class LessonCompletionCreateView(APIView):
                 
             completed_count = len(completed_lesson_ids)
             
-            # Calculate progress accurately based on total lessons in the course
             total_lessons = Lesson.objects.filter(course_id=lesson.course_id).count()
             
             logger.debug(f"  Final completed_count: {completed_count}")
             logger.debug(f"  Total lessons in course {lesson.course_id}: {total_lessons}")
 
             if total_lessons > 0:
-                # Use float division for accuracy
                 new_progress = min(100.0, (float(completed_count) / float(total_lessons)) * 100.0)
             else:
-                new_progress = 0.0 # Ensure it's float
-
-            # Sync with the enrollment record
+                new_progress = 0.0 
             enrollment = StudentCourseEnrollment.objects.filter(
                 student_profile=profile,
                 course_id=lesson.course_id,
             ).first()
 
             if enrollment:
-                # Use a safer way to save progress to avoid 500 if model/DB are out of sync
                 if hasattr(enrollment, 'progress'):
                     try:
                         enrollment.progress = round(new_progress)
@@ -236,7 +227,6 @@ class LessonCompletionCreateView(APIView):
                     except Exception as e:
                         logger.warning(f"Database error saving progress: {e}")
             
-            # Find the next lesson for UX guidance
             next_lesson = Lesson.objects.filter(
                 course_id=lesson.course_id,
                 order__gt=lesson.order or 0
@@ -547,7 +537,6 @@ class CourseCommentListCreateView(APIView):
         course = get_object_or_404(Course, id=course_id)
         profile = get_object_or_404(StudentProfile, user=request.user)
 
-        # Ensure the student is enrolled
         is_enrolled = StudentCourseEnrollment.objects.filter(
             student_profile=profile,
             course=course,

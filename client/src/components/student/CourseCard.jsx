@@ -169,7 +169,6 @@ export default function CourseCard({
     normalizedStatus !== "completed";
 
 const handleEnroll = async () => {
-  // Navigate to course detail page where enrollment can be completed
   if (!actualCourseId) {
     message.error("Course not found");
     return;

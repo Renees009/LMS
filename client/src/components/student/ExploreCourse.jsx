@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   Col,
@@ -11,12 +12,15 @@ import {
   Select,
   Space,
   Badge,
+  Avatar,
+  Tooltip,
 } from "antd";
 import {
   SearchOutlined,
   FilterOutlined,
   ReloadOutlined,
   BookOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 
 import CourseCard from "./CourseCard";
@@ -27,8 +31,10 @@ const { Option } = Select;
 const API_BASE = "http://localhost:8000";
 
 export default function ExploreCourse() {
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
 
   const [searchText, setSearchText] = useState("");
   const [query, setQuery] = useState("");
@@ -67,6 +73,24 @@ export default function ExploreCourse() {
     };
 
     loadCourses();
+
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/student/me/profile/`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("lms_token")}`,
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const img = data.profile_image_url || data.profile_image;
+          setProfileImage(img && !img.startsWith("http") ? `${API_BASE}${img}` : img);
+        }
+      } catch (e) {
+        console.error("Error fetching profile:", e);
+      }
+    };
+    fetchProfile();
   }, []);
 
   const categories = [
@@ -116,7 +140,7 @@ export default function ExploreCourse() {
   return (
     <div
       style={{
-        background: "#f8fafc",
+       
         minHeight: "100vh",
         padding: "24px 20px",
       }}
@@ -140,19 +164,30 @@ export default function ExploreCourse() {
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
               
-              <Title
-                level={3}
-                style={{
-                  margin: 0,
-                  color: "#111827",
-                  fontWeight: 600,
-                }}
-              >
-                Explore Courses
-              </Title>
+               <Title
+          level={2}
+          style={{
+            margin: 0,
+           
+            fontWeight: 700,
+            letterSpacing: "-0.5px",
+          }}
+        >
+          Explore Courses
+        </Title>
             </div>
           </div>
 
+          
+          <Tooltip title="View Profile">
+            <Avatar
+              size={42}
+              src={profileImage}
+              icon={!profileImage && <UserOutlined />}
+              onClick={() => navigate("/student/profile")}
+              style={{ cursor: "pointer", border: "2px solid #1890ff", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}
+            />
+          </Tooltip>
         </div>
 
         <Card

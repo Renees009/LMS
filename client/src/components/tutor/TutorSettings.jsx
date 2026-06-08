@@ -12,9 +12,17 @@ import {
 const { Title, Text } = Typography;
 
 export default function TutorSettings() {
-  const [darkTheme, setDarkTheme] = useState(false);
+  const [darkTheme, setDarkTheme] = useState(localStorage.getItem("theme") === "dark");
   const [form] = Form.useForm();
   const API_BASE = "http://localhost:8000";
+
+  const handleThemeChange = (checked) => {
+    setDarkTheme(checked);
+    const themeValue = checked ? "dark" : "light";
+    localStorage.setItem("theme", themeValue);
+    // Notify other components/layouts in the same window
+    window.dispatchEvent(new Event("storage"));
+  };
 
   const onFinish = async (values) => {
     if (values.newPassword !== values.confirmPassword) {
@@ -57,7 +65,7 @@ export default function TutorSettings() {
       style={{
         minHeight: "100vh",
         padding: "40px",
-        backgroundColor: darkTheme ? "#1e293b" : "#f8fafc",
+        backgroundColor: darkTheme ? "#0f172a" : "#f8fafc",
         transition: "0.3s",
       }}
     >
@@ -72,7 +80,7 @@ export default function TutorSettings() {
           level={2}
           style={{
             textAlign: "center",
-            color: darkTheme ? "#1e293b" : "#1e293b",
+            color: darkTheme ? "#f8fafc" : "#1e293b",
           }}
         >
           Tutor Settings
@@ -133,10 +141,7 @@ export default function TutorSettings() {
           <Form.Item>
             <Text strong>Theme</Text>
             <div style={{ marginTop: 10 }}>
-              <Switch
-                checked={darkTheme}
-                onChange={setDarkTheme}
-              />{" "}
+              <Switch checked={darkTheme} onChange={handleThemeChange} />{" "}
               <span style={{ marginLeft: 10 }}>
                 {darkTheme ? "Dark Theme" : "Light Theme"}
               </span>

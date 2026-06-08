@@ -93,21 +93,34 @@ export default function SignIn() {
           boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
         }}
       >
-        <Title
-          level={2}
-          style={{
-            textAlign: "center",
-            color: "#1e293b",
-          }}
-        >
-          FLOW LEARN HUB
-        </Title>
+         <div style={{ textAlign: "center" }}>
+            <span
+              style={{
+                color: "#3b82f6",
+                fontSize: 30,
+                fontWeight: 800,
+              }}
+            >
+              FLOW
+            </span>
+
+            <span
+              style={{
+                color: "black",
+                fontSize: 30,
+                fontWeight: 700,
+                marginLeft: 6,
+              }}
+            >
+              LEARN HUB
+            </span>
+          </div>
 
         <Title
           level={3}
           style={{
             textAlign: "center",
-            color: "#334155",
+            color: "#553333",
             marginBottom: 30,
           }}
         >

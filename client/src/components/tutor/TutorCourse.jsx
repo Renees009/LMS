@@ -8,6 +8,8 @@ import {
   Tag,
   Button,
   message,
+  Avatar,
+  Tooltip,
 } from "antd";
 import { BookOutlined, UserOutlined, ClockCircleOutlined, PictureOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
@@ -19,6 +21,7 @@ const API_BASE = "http://localhost:8000";
 export default function TutorCourse() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
 
   const navigate = useNavigate();
 
@@ -54,6 +57,24 @@ export default function TutorCourse() {
     };
 
     loadCourses();
+
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/tutor/me/profile/`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("lms_token")}`,
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const img = data.profile_image_url || data.profile_image;
+          setProfileImage(img && !img.startsWith("http") ? `${API_BASE}${img}` : img);
+        }
+      } catch (e) {
+        console.error("Error fetching tutor profile:", e);
+      }
+    };
+    fetchProfile();
   }, []);
 
   const handleManageCourse = (courseId) => {
@@ -117,16 +138,18 @@ export default function TutorCourse() {
   return (
     <div
       style={{
-        background: "#f0f2f6",
         minHeight: "100vh",
         padding: "32px 24px",
       }}
     >
       <div
         style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
           marginBottom: 32,
           maxWidth: 1400,
-          margin: "0 auto 32px auto",
+          margin: "0 auto 24px auto",
         }}
       >
         <Title
@@ -139,6 +162,16 @@ export default function TutorCourse() {
         >
           My Courses
         </Title>
+
+        <Tooltip title="View Profile">
+          <Avatar
+            size={42}
+            src={profileImage}
+            icon={!profileImage && <UserOutlined />}
+            onClick={() => navigate("/tutor/profile")}
+            style={{ cursor: "pointer", border: "2px solid #1890ff", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}
+          />
+        </Tooltip>
       </div>
 
       {loading ? (

@@ -204,15 +204,28 @@ export default function SignUp() {
           boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
         }}
       >
-        <Title
-          level={2}
-          style={{
-            textAlign: "center",
-            color: "#1e293b",
-          }}
-        >
-          FLOW LEARN HUB
-        </Title>
+         <div style={{ textAlign: "center" }}>
+            <span
+              style={{
+                color: "#3b82f6",
+                fontSize: 30,
+                fontWeight: 800,
+              }}
+            >
+              FLOW
+            </span>
+
+            <span
+              style={{
+                color: "black",
+                fontSize: 30,
+                fontWeight: 700,
+                marginLeft: 6,
+              }}
+            >
+              LEARN HUB
+            </span>
+          </div>
 
         <Title
           level={3}
@@ -306,23 +319,30 @@ export default function SignUp() {
               </Form.Item>
 
               <Form.Item
-                label="Preferred Category"
-                name="preferredCategory"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please select a preferred category",
-                  },
-                ]}
-              >
-                <Select placeholder="Select your preferred learning category">
-                  <Option value="programming">Programming</Option>
-                  <Option value="designing">Designing</Option>
-                  <Option value="ai">Artificial Intelligence</Option>
-                  <Option value="cs">Computer Science</Option>
-                  <Option value="other">Other</Option>
-                </Select>
-              </Form.Item>
+  label="Preferred Categories"
+  name="preferredCategory"
+  rules={[
+    {
+      required: true,
+      message: "Please select at least one preferred category",
+    },
+  ]}
+>
+  <Select
+    mode="multiple"
+    placeholder="Select your preferred learning categories"
+    allowClear
+  >
+  
+    <Option value="ai">Artificial Intelligence</Option>
+    <Option value="cs">Computer Science</Option>
+    <Option value="cs">Data Structures</Option>
+    <Option value="designing">Designing</Option>
+    <Option value="cs">Machine Learning</Option>
+    <Option value="programming">Programming</Option>
+    <Option value="other">Other</Option>
+  </Select>
+</Form.Item>
 
               <Form.Item
                 label="Phone (Optional)"

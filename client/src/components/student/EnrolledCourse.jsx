@@ -46,10 +46,8 @@ export default function EnrolledCourse() {
       }
       const list = Array.isArray(data) ? data : data?.results || data?.enrollments || [];
       console.log("/api/me/enrollments response:", data);
-      // Normalize enrollments so that each item has a `course` object
       const normalized = list.map((item) => {
         if (item && item.course) return item;
-        // If API returned a course directly, wrap into an enrollment-like object
         if (item && item.id && item.title) {
           return { id: item.id, course: item };
         }
@@ -73,7 +71,6 @@ export default function EnrolledCourse() {
   return (
     <div
       style={{
-        background: "#f8fafc",
         minHeight: "100vh",
         padding: "24px 20px",
       }}
@@ -84,18 +81,20 @@ export default function EnrolledCourse() {
           margin: "0 auto",
         }}
       >
-        <div style={{ marginBottom: 24 }}>
-          <Title
-            level={3}
-            style={{
-              margin: 0,
-              color: "#111827",
-              fontWeight: 600,
-            }}
-          >
-            Enrolled Courses
-          </Title>
-        </div>
+        <div style={{ marginBottom: 28 }}>
+        <Title
+          level={2}
+          style={{
+            margin: 0,
+          
+            fontWeight: 700,
+            letterSpacing: "-0.5px",
+          }}
+        >
+          Enrolled Courses
+        </Title>
+
+      </div>
 
         {loading ? (
           <div
@@ -158,4 +157,3 @@ export default function EnrolledCourse() {
     </div>
   );
 }
-

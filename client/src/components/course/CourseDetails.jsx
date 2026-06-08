@@ -37,7 +37,6 @@ import {
 const { Title, Text, Paragraph } = Typography;
 const { Panel } = Collapse;
 
-// Consider moving this to an .env file for production
 const API_BASE = import.meta.env?.VITE_API_URL || "http://localhost:8000";
 
 export default function CourseDetails() {
@@ -199,11 +198,10 @@ export default function CourseDetails() {
         const totalLessonsCount = lessons.length || (course?.lessons?.length) || 0;
         const calculated = totalLessonsCount > 0 ? Math.round((completedIds.length / totalLessonsCount) * 100) : 0;
         
-        // Ensure that if any lesson is completed, we show at least 1%
         const finalProgress = (completedIds.length > 0) ? Math.max(1, Math.max(rawServer, calculated)) : 0;
 
         setProgress(finalProgress);
-        // Ensure all IDs are stored as Numbers for consistent 'includes' checks
+
         setCompletedLessons(completedIds);
         setNextLessonId(data.next_lesson_id);
       }
@@ -320,7 +318,7 @@ export default function CourseDetails() {
       return;
     }
     setIsStartingQuiz(true);
-    navigate(`/student/quiz/${courseId}`); // Consistent route
+    navigate(`/student/quiz/${courseId}`); 
   };
 
   const handleContinueLearning = () => {
@@ -401,14 +399,12 @@ export default function CourseDetails() {
 
       const data = await res.json();
       
-      // Merge server data with local state to ensure the current lesson is accounted for
       const serverCompletedIds = (data.completed_lesson_ids || []).map(id => Number(id));
       const updatedList = Array.from(new Set([...completedLessons, ...serverCompletedIds, Number(lessonId)]));
       
       setCompletedLessons(updatedList);
       setNextLessonId(data.next_lesson_id || null);
       
-      // Calculate total lessons and local progress fallback
       const totalLessonsCount = lessons.length || (course?.lessons?.length) || 0;
       const localCalc = totalLessonsCount > 0 ? Math.round((updatedList.length / totalLessonsCount) * 100) : 0;
       
@@ -416,13 +412,11 @@ export default function CourseDetails() {
         ? Math.round(parseFloat(data.progress_percentage))
         : 0;
 
-      // Ensure we don't display 0% if at least one lesson is finished
       const currentProgress = updatedList.length > 0 ? Math.max(1, Math.max(serverProgress, localCalc)) : 0;
 
       setProgress(currentProgress);
       message.success(`Lesson marked as complete! (${currentProgress}%)`);
 
-      // Silently refresh progress details in the background
       fetchCourseProgress().catch(() => null);
     } catch (error) {
       console.error("Error updating progress:", error);
@@ -475,9 +469,8 @@ export default function CourseDetails() {
       height: "100vh",
       display: "flex",
       flexDirection: "column",
-      background: "#f0f2f5"
+      
     }}>
-      {/* Fixed Header Card */}
       <div style={{ flexShrink: 0, padding: "16px 24px 0 24px" }}>
         <Card 
           style={{ 
@@ -493,7 +486,6 @@ export default function CourseDetails() {
             color: "white",
           }}>
             <Row gutter={[24, 24]}>
-              {/* Left Column - Course Info */}
               <Col xs={24} lg={16}>
                 <Row gutter={[24, 24]}>
                   <Col xs={24} md={8}>
@@ -626,53 +618,38 @@ export default function CourseDetails() {
                 </Row>
               </Col>
 
-              {/* Right Column - Progress Tracking Card - Pushed to the right */}
               {enrollmentStatus === "enrolled" && (
                 <Col xs={24} lg={8}>
                   <div style={{ 
                     display: "flex",
-                    justifyContent: "flex-end",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
                     height: "100%",
                   }}>
-                    <div style={{ 
-                      background: "rgba(255,255,255,0.15)",
-                      borderRadius: 12,
-                      padding: "16px",
-                      backdropFilter: "blur(10px)",
-                      width: "80%",
-                    }}>
-                      <div style={{ textAlign: "center" }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                          <Text strong style={{ color: "white", fontSize: 14 }}>
-                            Your Progress
-                          </Text>
-                          <Text strong style={{ color: "#ffd700", fontSize: 18 }}>
-                            {progress}%
-                          </Text>
-                        </div>
-                        <Progress 
-                          percent={progress} 
-                          strokeColor="#ffd700"
-                          showInfo={false}
-                          trailColor="rgba(255,255,255,0.3)"
-                          strokeWidth={8}
-                        />
-                        <div style={{ marginTop: 12, marginBottom: 12 }}>
-                          <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 12 }}>
-                            ✅ {completedLessons.length} of {lessons.length} lessons completed
-                          </Text>
-                        </div>
-                        <div style={{ 
-                          fontSize: 11, 
-                          color: "rgba(255,255,255,0.8)", 
-                          fontStyle: "italic",
-                          padding: "8px",
-                          background: "rgba(0,0,0,0.2)",
-                          borderRadius: 8,
-                        }}>
-                          {getTrackProgressMessage()}
-                        </div>
-                      </div>
+                    <Tooltip title={getTrackProgressMessage()}>
+                      <Progress 
+                        type="circle"
+                        percent={progress} 
+                        strokeColor={{
+                          '0%': '#ffd700',
+                          '100%': '#52c41a',
+                        }}
+                        trailColor="rgba(255,255,255,0.15)"
+                        strokeWidth={8}
+                        width={140}
+                        format={(percent) => (
+                          <div style={{ color: "white" }}>
+                            <div style={{ fontSize: 26, fontWeight: "bold" }}>{percent}%</div>
+                            <div style={{ fontSize: 10, opacity: 0.8, letterSpacing: 1 }}>COMPLETE</div>
+                          </div>
+                        )}
+                      />
+                    </Tooltip>
+                    <div style={{ marginTop: 16, textAlign: "center" }}>
+                      <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 14, fontWeight: 500 }}>
+                        {completedLessons.length} / {lessons.length} Lessons Finished
+                      </Text>
                     </div>
                   </div>
                 </Col>
@@ -682,7 +659,6 @@ export default function CourseDetails() {
         </Card>
       </div>
 
-      {/* Scrollable Content Area */}
       <div style={{ 
         flex: 1, 
         overflowY: "auto", 

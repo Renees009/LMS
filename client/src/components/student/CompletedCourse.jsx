@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Card, Col, Row, Spin, Typography, message, Button } from "antd";
-import { TrophyOutlined } from "@ant-design/icons";
 import CourseCard from "./CourseCard";
 
 const { Title, Text } = Typography;
@@ -47,7 +46,6 @@ export default function CompletedCourse() {
   return (
     <div
       style={{
-        background: "#f8fafc",
         minHeight: "100vh",
         padding: "24px 20px",
       }}
@@ -70,21 +68,19 @@ export default function CompletedCourse() {
         >
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-              <TrophyOutlined style={{ fontSize: 28, color: "#faad14" }} />
-              <Title
-                level={3}
-                style={{
-                  margin: 0,
-                  color: "#111827",
-                  fontWeight: 600,
-                }}
-              >
-                Completed Courses
-              </Title>
+              
+               <Title
+          level={2}
+          style={{
+            margin: 0,
+            
+            fontWeight: 700,
+            letterSpacing: "-0.5px",
+          }}
+        >
+          Completed Courses
+        </Title>
             </div>
-            <Text style={{ color: "#666", fontSize: 14 }}>
-              Celebrate your achievements and download certificates
-            </Text>
           </div>
 
          
@@ -137,7 +133,7 @@ export default function CompletedCourse() {
                     }}
                     styles={{ body: { padding: 60 } }}
                   >
-                    <TrophyOutlined style={{ fontSize: 48, color: "#d9d9d9", marginBottom: 16 }} />
+                   
                     <Title level={4} style={{ color: "#666", marginBottom: 8 }}>
                       No Completed Courses Yet
                     </Title>

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Layout, Menu, Typography } from "antd";
+import { Layout, Menu, Typography, ConfigProvider, theme } from "antd";
 import {
   UserOutlined,
   BookOutlined,
@@ -17,6 +17,16 @@ export default function StudentLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem("theme") === "dark");
+
+  useEffect(() => {
+    const handleThemeUpdate = () => {
+      setIsDarkMode(localStorage.getItem("theme") === "dark");
+    };
+
+    window.addEventListener("storage", handleThemeUpdate);
+    return () => window.removeEventListener("storage", handleThemeUpdate);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("lms_token");
@@ -26,11 +36,7 @@ export default function StudentLayout() {
   };
 
   const menuItems = [
-    {
-      key: "/student/profile",
-      icon: <UserOutlined />,
-      label: "Student Profile",
-    },
+
     {
       key: "/student/explore",
       icon: <BookOutlined />,
@@ -68,6 +74,11 @@ export default function StudentLayout() {
   };
 
   return (
+    <ConfigProvider
+      theme={{
+        algorithm: isDarkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+      }}
+    >
     <Layout style={{ minHeight: "100vh" }}>
       <div
         onMouseEnter={() => setIsHovered(true)}
@@ -104,9 +115,28 @@ export default function StudentLayout() {
             }}
           >
             {isHovered ? (
-              <Title level={4} style={{ color: "white", margin: 0, textAlign: "center" }}>
-                Flow Student Hub
-              </Title>
+             <div style={{ textAlign: "center" }}>
+            <span
+              style={{
+                color: "#3b82f6",
+                fontSize: 30,
+                fontWeight: 800,
+              }}
+            >
+              Flow
+            </span>
+
+            <span
+              style={{
+                color: "#ffffff",
+                fontSize: 30,
+                fontWeight: 700,
+                marginLeft: 6,
+              }}
+            >
+              Student Hub
+            </span>
+          </div>
             ) : (
               <div
                 style={{
@@ -148,12 +178,12 @@ export default function StudentLayout() {
         style={{
           marginLeft: isHovered ? 250 : 80,
           transition: "margin-left 0.3s ease",
-          background: "#f8fafc",
+          background: isDarkMode ? "#1e293b" : "#f8fafc",
         }}
       >
         <Content
           style={{
-            background: "#f8fafc",
+            background: isDarkMode ? "#0f172a" : "#f8fafc",
             minHeight: "100vh",
             padding: "24px",
           }}
@@ -162,5 +192,6 @@ export default function StudentLayout() {
         </Content>
       </Layout>
     </Layout>
+    </ConfigProvider>
   );
 }

@@ -102,7 +102,6 @@ class AdminUserRoleUpdateView(APIView):
 
         user_to_mod.save()
 
-        # Notify user about role change
         from auth.models import Notification
         Notification.objects.create(
             user=user_to_mod,

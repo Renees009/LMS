@@ -136,7 +136,6 @@ export default function TutorProfile() {
       style={{
         padding: "30px",
         minHeight: "100vh",
-        backgroundColor: "#f8fafc",
       }}
     >
       <Card
@@ -146,11 +145,11 @@ export default function TutorProfile() {
           borderRadius: "12px",
         }}
       >
-        <Title level={2} style={{ textAlign: "center", color: "#1e293b" }}>
+        <Title level={2} style={{ textAlign: "center", }}>
           Tutor Profile
         </Title>
         {userName ? (
-          <div style={{ textAlign: "center", marginBottom: 16, color: "#334155" }}>
+          <div style={{ textAlign: "center", marginBottom: 16,  }}>
             Logged in: {userName}
           </div>
         ) : null}
@@ -172,7 +171,7 @@ export default function TutorProfile() {
                 selectedFileRef.current = file;
                 setProfileImage(URL.createObjectURL(file));
                 handleUpload({ file });
-                return false; // prevent auto-upload
+                return false; 
               }}
             >
               <Button icon={<UploadOutlined />} style={{ marginTop: "15px" }}>
@@ -310,4 +309,3 @@ export default function TutorProfile() {
     </div>
   );
 }
-
