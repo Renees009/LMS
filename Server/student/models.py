@@ -34,8 +34,8 @@ class StudentCourseEnrollment(models.Model):
     status = models.CharField(max_length=50, default="enrolled")
     progress = models.PositiveIntegerField(default=0)
     enrolled_at = models.DateField(auto_now_add=True)
-    highest_quiz_score = models.PositiveIntegerField(default=0)
-    highest_quiz_grade = models.CharField(max_length=10, blank=True, null=True)
+    recent_quiz_score = models.PositiveIntegerField(default=0)
+    recent_quiz_grade = models.CharField(max_length=10, blank=True, null=True)
 
     class Meta:
         unique_together = ("student_profile", "course")
@@ -93,4 +93,3 @@ class StudentCourseCompletion(models.Model):
 
     def __str__(self):
         return f"Completed: {self.enrollment.course.title} by {self.student_profile}" 
-

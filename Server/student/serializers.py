@@ -97,7 +97,7 @@ class StudentCourseEnrollmentSerializer(serializers.ModelSerializer):
         if total == 0:
             return 0
         completed = self.get_completed_lessons(obj)
-        return int((completed / total) * 100)
+        return round((completed / total) * 100)
 
     class Meta:
         model = StudentCourseEnrollment
@@ -117,8 +117,8 @@ class StudentCourseEnrollmentSerializer(serializers.ModelSerializer):
             "progress",
             "completed_lessons",
             "total_lessons",
-            "highest_quiz_score",
-            "highest_quiz_grade",
+            "recent_quiz_score",
+            "recent_quiz_grade",
         ]
 
 
@@ -181,5 +181,3 @@ class StudentCourseCompletionSerializer(serializers.ModelSerializer):
 
     def get_course_thumbnail_url(self, obj):
         return self.get_thumbnail_url(obj)
-
-

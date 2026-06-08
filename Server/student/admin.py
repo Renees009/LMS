@@ -22,8 +22,8 @@ class StudentCourseEnrollmentAdmin(admin.ModelAdmin):
         "course",
         "status",
         "enrolled_at",
-        "highest_quiz_score",
-        "highest_quiz_grade",
+        "recent_quiz_score",
+        "recent_quiz_grade",
     )
     list_filter = ("status", "enrolled_at", "course__category", "course__level")
     search_fields = (
@@ -68,4 +68,3 @@ class StudentCourseCompletionAdmin(admin.ModelAdmin):
     )
     ordering = ("-completed_at",)
     autocomplete_fields = ("student_profile", "enrollment", "tutor_course")
-

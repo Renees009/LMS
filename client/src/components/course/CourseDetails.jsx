@@ -161,8 +161,7 @@ export default function CourseDetails() {
       const data = await res.json();
       const enrollments = Array.isArray(data) ? data : data.results || [];
       const enrolled = enrollments.find((e) => {
-        const courseObject = e.course || {};
-        const courseIdentifier = courseObject.id || courseObject.course_id || e.course_id || (e.course && e.course.id) || e.id;
+        const courseIdentifier = e.course?.id || e.course_id;
         return parseInt(courseIdentifier) === parseInt(courseId);
       });
       const isEnrolled = Boolean(enrolled);
@@ -192,15 +191,18 @@ export default function CourseDetails() {
 
       if (res.ok) {
         const data = await res.json();
-        const serverPercentage = (data.progress_percentage !== undefined && data.progress_percentage !== null)
+        const rawServer = (data.progress_percentage !== undefined && data.progress_percentage !== null)
           ? Math.round(data.progress_percentage)
           : 0;
         
         const completedIds = (data.completed_lesson_ids || []).map(id => Number(id));
         const totalLessonsCount = lessons.length || (course?.lessons?.length) || 0;
-        const localPercentage = totalLessonsCount > 0 ? Math.round((completedIds.length / totalLessonsCount) * 100) : 0;
+        const calculated = totalLessonsCount > 0 ? Math.round((completedIds.length / totalLessonsCount) * 100) : 0;
+        
+        // Ensure that if any lesson is completed, we show at least 1%
+        const finalProgress = (completedIds.length > 0) ? Math.max(1, Math.max(rawServer, calculated)) : 0;
 
-        setProgress(serverPercentage > 0 ? serverPercentage : localPercentage);
+        setProgress(finalProgress);
         // Ensure all IDs are stored as Numbers for consistent 'includes' checks
         setCompletedLessons(completedIds);
         setNextLessonId(data.next_lesson_id);
@@ -408,21 +410,14 @@ export default function CourseDetails() {
       
       // Calculate total lessons and local progress fallback
       const totalLessonsCount = lessons.length || (course?.lessons?.length) || 0;
-      const localProgress = totalLessonsCount > 0 ? Math.round((updatedList.length / totalLessonsCount) * 100) : 0;
+      const localCalc = totalLessonsCount > 0 ? Math.round((updatedList.length / totalLessonsCount) * 100) : 0;
       
       const serverProgress = (data.progress_percentage !== undefined && data.progress_percentage !== null)
         ? Math.round(parseFloat(data.progress_percentage))
         : 0;
 
-      // Use server progress if it's positive, otherwise fall back to local calculation
-      let currentProgress;
-      if (serverProgress > 0) {
-        currentProgress = serverProgress;
-      } else if (totalLessonsCount > 0) {
-        currentProgress = localProgress;
-      } else {
-        currentProgress = progress;
-      }
+      // Ensure we don't display 0% if at least one lesson is finished
+      const currentProgress = updatedList.length > 0 ? Math.max(1, Math.max(serverProgress, localCalc)) : 0;
 
       setProgress(currentProgress);
       message.success(`Lesson marked as complete! (${currentProgress}%)`);

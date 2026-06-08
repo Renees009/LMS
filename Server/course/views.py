@@ -231,7 +231,7 @@ class LessonCompletionCreateView(APIView):
                 # Use a safer way to save progress to avoid 500 if model/DB are out of sync
                 if hasattr(enrollment, 'progress'):
                     try:
-                        enrollment.progress = int(new_progress)
+                        enrollment.progress = round(new_progress)
                         enrollment.save(update_fields=["progress"])
                     except Exception as e:
                         logger.warning(f"Database error saving progress: {e}")
@@ -299,8 +299,8 @@ class CourseProgressView(APIView):
         
         if enrollment:
             try:
-                if hasattr(enrollment, 'progress') and enrollment.progress != int(progress_percentage):
-                    enrollment.progress = int(progress_percentage)
+                if hasattr(enrollment, 'progress') and enrollment.progress != round(progress_percentage):
+                    enrollment.progress = round(progress_percentage)
                     enrollment.save(update_fields=["progress"])
             except Exception as e:
                 logger.exception("Syncing progress to enrollment failed")
@@ -385,9 +385,10 @@ class CourseQuizHighestScoreView(APIView):
 
         payload = {
             "highest_score": highest_score,
+            "recent_score": enrollment.recent_quiz_score if enrollment else 0,
+            "recent_grade": enrollment.recent_quiz_grade if enrollment else None,
             "reattempt_count": attempt_count,
             "course_completed": course_completed,
-            "highest_score_grade": enrollment.highest_quiz_grade if enrollment else None,
         }
 
         return Response(payload, status=status.HTTP_200_OK)
@@ -453,10 +454,9 @@ class CourseQuizSubmitView(APIView):
 
         enrollment = StudentCourseEnrollment.objects.filter(student_profile=profile, course=course).first()
         if enrollment:
-            if score > (enrollment.highest_quiz_score or 0):
-                enrollment.highest_quiz_score = score
-                enrollment.highest_quiz_grade = grade
-                enrollment.save(update_fields=["highest_quiz_score", "highest_quiz_grade"]) 
+            enrollment.recent_quiz_score = score
+            enrollment.recent_quiz_grade = grade
+            enrollment.save(update_fields=["recent_quiz_score", "recent_quiz_grade"]) 
 
         if passed:
             tutor_course = TutorCourse.objects.filter(course=course).first()
