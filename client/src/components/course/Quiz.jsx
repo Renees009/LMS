@@ -39,6 +39,28 @@ export default function QuizPage() {
   }, [courseId]);
 
   useEffect(() => {
+    const style = document.createElement("style");
+    style.id = "quiz-ui-cleanup";
+    style.innerHTML = `
+      /* Hide sidebars and headers that might be in the parent "Student Layout" */
+      aside, .ant-layout-sider, .sidebar, .header, .ant-layout-header, .footer, .ant-layout-footer { 
+        display: none !important; 
+      }
+      /* Ensure the main content takes full width and height */
+      .ant-layout-content, main, .ant-layout { 
+        margin: 0 !important; 
+        padding: 0 !important; 
+        background: white !important;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      const el = document.getElementById("quiz-ui-cleanup");
+      if (el) el.remove();
+    };
+  }, []);
+
+  useEffect(() => {
     if (!quiz || submitted) return;
     setTimeLeft(60);
   }, [quiz, currentQuestion, submitted]);
@@ -63,6 +85,23 @@ export default function QuizPage() {
 
     return () => clearInterval(timer);
   }, [quiz, currentQuestion, submitted]);
+
+  // Monitor Full-Screen status for integrity
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      // If user exits full screen and quiz is not yet submitted
+      if (!document.fullscreenElement && !submitted && quiz) {
+        message.warning("Integrity Alert: Full-screen mode exited. Submitting quiz automatically.");
+        handleSubmit(true);
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [quiz, answers, submitted]);
 
   const fetchQuiz = async () => {
     try {
@@ -201,7 +240,7 @@ export default function QuizPage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", background: "#f0f2f5" }}>
         <Spin size="large" />
       </div>
     );
@@ -209,7 +248,7 @@ export default function QuizPage() {
 
   if (!quiz) {
     return (
-      <div style={{ maxWidth: 800, margin: "0 auto", padding: 24 }}>
+      <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f0f2f5" }}>
         <Result
           status="warning"
           title="No Quiz Available"
@@ -227,8 +266,8 @@ export default function QuizPage() {
   if (submitted) {
     const passed = score >= 70;
     return (
-      <div style={{ maxWidth: 800, margin: "0 auto", padding: 24 }}>
-        <Card style={{ borderRadius: 12 }}>
+      <div style={{ minHeight: "100vh", background: "#f0f2f5", padding: "40px 20px" }}>
+        <Card style={{ maxWidth: 800, margin: "0 auto", borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
           <Result
             status={passed ? "success" : "error"}
             icon={passed ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
@@ -286,8 +325,8 @@ export default function QuizPage() {
   const progress = ((currentQuestion + 1) / quiz.questions.length) * 100;
 
   return (
-    <div style={{ maxWidth: 800, margin: "0 auto", padding: 24 }}>
-      <Card style={{ borderRadius: 12 }}>
+    <div style={{ minHeight: "100vh", background: "#f0f2f5", padding: "40px 20px" }}>
+      <Card style={{ maxWidth: 900, margin: "0 auto", borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
         <div style={{ marginBottom: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <Title level={3} style={{ margin: 0 }}>{quiz.title}</Title>

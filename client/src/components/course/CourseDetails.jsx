@@ -318,6 +318,10 @@ export default function CourseDetails() {
       return;
     }
     setIsStartingQuiz(true);
+    // Enter full screen mode before navigation
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(err => console.error(err));
+    }
     navigate(`/student/quiz/${courseId}`); 
   };
 
@@ -337,6 +341,9 @@ export default function CourseDetails() {
         onOk: handleContinueLearning,
       });
       return;
+    }
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(err => console.error(err));
     }
     navigate(`/student/quiz/${courseId}`);
   };
