@@ -66,7 +66,8 @@ class CourseCreateView(APIView):
         except Exception:
             raise ValidationError({"number_of_lessons": "must be an integer"})
 
-        if not title or not category or duration is None or not level or description is None:
+        # Use truthiness checks to ensure fields are neither None nor empty strings
+        if not title or not category or not duration or not level or not description:
             raise ValidationError({"detail": "Missing required course fields"})
 
         thumbnail = request.FILES.get("thumbnail")

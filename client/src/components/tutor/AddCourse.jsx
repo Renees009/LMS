@@ -20,7 +20,7 @@ import { useForm, Controller } from "react-hook-form";
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "http://localhost:8000";
 
 export default function AddCourse() {
   const [loading, setLoading] = useState(false);
@@ -34,7 +34,7 @@ export default function AddCourse() {
     formState: { errors }, 
   } = useForm({
     defaultValues: {
-      number_of_lessons: 0,
+      number_of_lessons: 1,
       lessons: [],
     },
   });
@@ -59,22 +59,24 @@ export default function AddCourse() {
       }
 
       const lessonData = [];
-      for (let i = 0; i < values.number_of_lessons; i++) {
-        lessonData.push({
-          title: values.lessons?.[i]?.title || "",
-          description: values.lessons?.[i]?.description || "",
-        });
-      }
-      formData.append("lessons", JSON.stringify(lessonData));
+      const numLessons = parseInt(values.number_of_lessons, 10) || 0;
 
-      values.lessons?.forEach((lesson, index) => {
-        if (lesson?.material && lesson.material.length > 0) {
-          formData.append(`lesson_material_${index}`, lesson.material[0].originFileObj);
+      for (let i = 0; i < numLessons; i++) {
+        const lesson = values.lessons?.[i] || {};
+        lessonData.push({
+          title: lesson.title || "",
+          description: lesson.description || "",
+        });
+
+        if (lesson.material && lesson.material.length > 0) {
+          formData.append(`lesson_material_${i}`, lesson.material[0].originFileObj);
         }
-        if (lesson?.video && lesson.video.length > 0) {
-          formData.append(`lesson_video_${index}`, lesson.video[0].originFileObj);
+        if (lesson.video && lesson.video.length > 0) {
+          formData.append(`lesson_video_${i}`, lesson.video[0].originFileObj);
         }
-      });
+      }
+      
+      formData.append("lessons", JSON.stringify(lessonData));
 
       const response = await fetch(`${API_BASE}/api/course/create/`, {
         method: "POST",
@@ -84,13 +86,24 @@ export default function AddCourse() {
         body: formData,
       });
 
-      const data = await response.json();
+      let data = {};
+      try {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          data = await response.json();
+        }
+      } catch (e) {
+        console.error("Error parsing response JSON:", e);
+      }
 
       if (response.ok) {
         message.success("Course Added Successfully");
         reset(); 
       } else {
-        message.error(data.error || "Failed to add course");
+        const errorMsg = data.detail || data.error || 
+                        (typeof data === 'object' ? Object.values(data)[0] : null) || 
+                        "Failed to add course";
+        message.error(Array.isArray(errorMsg) ? errorMsg[0] : errorMsg);
       }
     } catch (error) {
       console.error(error);
@@ -149,8 +162,8 @@ export default function AddCourse() {
             </Title>
           </div>
 
-          <Form layout="vertical">
-            <form onSubmit={handleSubmit(onSubmit)}>
+          <Form layout="vertical" onFinish={handleSubmit(onSubmit, (err) => console.log("Form Validation Errors:", err))}>
+           
               <div style={{ marginBottom: 24 }}>
                 <Form.Item
                   label={
@@ -169,6 +182,7 @@ export default function AddCourse() {
                         maxCount={1}
                         onChange={(info) => field.onChange(info.fileList)}
                         listType="picture"
+                        fileList={field.value}
                       >
                         <Button icon={<UploadOutlined />}>Upload Thumbnail</Button>
                       </Upload>
@@ -188,11 +202,18 @@ export default function AddCourse() {
                   validateStatus={errors.title ? "error" : ""}
                   help={errors.title ? "Course title is required" : ""}
                 >
-                  <Input
-                    placeholder="Enter course title"
-                    size="large"
-                    style={{ borderColor: "#d9d9d9" }}
-                    {...register("title", { required: true })}
+                  <Controller
+                    name="title"
+                    control={control}
+                    rules={{ required: true }}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        placeholder="Enter course title"
+                        size="large"
+                        style={{ borderColor: "#d9d9d9" }}
+                      />
+                    )}
                   />
                 </Form.Item>
               </div>
@@ -279,11 +300,19 @@ export default function AddCourse() {
                       validateStatus={errors.duration ? "error" : ""}
                       help={errors.duration ? "Duration is required" : ""}
                     >
-                      <Input
-                        placeholder="e.g., 10 Hours"
-                        size="large"
-                        style={{ borderColor: "#d9d9d9" }}
-                        {...register("duration", { required: true })}
+                      <Controller
+                        name="duration"
+                        control={control}
+                        rules={{ required: true }}
+                        render={({ field }) => (
+                          <InputNumber
+                            {...field}
+                            placeholder="Hours"
+                            size="large"
+                            style={{ width: "100%", borderColor: "#d9d9d9" }}
+                            min={1}
+                          />
+                        )}
                       />
                     </Form.Item>
                   </div>
@@ -300,6 +329,7 @@ export default function AddCourse() {
                     >
                       <Controller
                         name="number_of_lessons"
+                        rules={{ required: true, min: 1 }}
                         control={control}
                         render={({ field }) => (
                           <InputNumber
@@ -329,12 +359,19 @@ export default function AddCourse() {
                   validateStatus={errors.description ? "error" : ""}
                   help={errors.description ? "Description is required" : ""}
                 >
-                  <TextArea
-                    rows={4}
-                    placeholder="Course Description"
-                    size="large"
-                    style={{ borderColor: "#d9d9d9" }}
-                    {...register("description", { required: true })}
+                  <Controller
+                    name="description"
+                    control={control}
+                    rules={{ required: true }}
+                    render={({ field }) => (
+                      <TextArea
+                        {...field}
+                        rows={4}
+                        placeholder="Course Description"
+                        size="large"
+                        style={{ borderColor: "#d9d9d9" }}
+                      />
+                    )}
                   />
                 </Form.Item>
               </div>
@@ -399,11 +436,18 @@ export default function AddCourse() {
                           validateStatus={errors.lessons?.[index]?.title ? "error" : ""}
                           help={errors.lessons?.[index]?.title ? "Lesson title is required" : ""}
                         >
-                          <Input
-                            placeholder="Lesson Title"
-                            size="large"
-                            style={{ borderColor: "#d9d9d9" }}
-                            {...register(`lessons.${index}.title`, { required: true })}
+                          <Controller
+                            name={`lessons.${index}.title`}
+                            control={control}
+                            rules={{ required: true }}
+                            render={({ field }) => (
+                              <Input
+                                {...field}
+                                placeholder="Lesson Title"
+                                size="large"
+                                style={{ borderColor: "#d9d9d9" }}
+                              />
+                            )}
                           />
                         </Form.Item>
                       </div>
@@ -416,11 +460,18 @@ export default function AddCourse() {
                             errors.lessons?.[index]?.description ? "Lesson description is required" : ""
                           }
                         >
-                          <TextArea
-                            rows={3}
-                            placeholder="Lesson Description"
-                            style={{ borderColor: "#d9d9d9" }}
-                            {...register(`lessons.${index}.description`, { required: true })}
+                          <Controller
+                            name={`lessons.${index}.description`}
+                            control={control}
+                            rules={{ required: true }}
+                            render={({ field }) => (
+                              <TextArea
+                                {...field}
+                                rows={3}
+                                placeholder="Lesson Description"
+                                style={{ borderColor: "#d9d9d9" }}
+                              />
+                            )}
                           />
                         </Form.Item>
                       </div>
@@ -436,6 +487,7 @@ export default function AddCourse() {
                                   beforeUpload={() => false}
                                   maxCount={1}
                                   onChange={(info) => field.onChange(info.fileList)}
+                                  fileList={field.value}
                                 >
                                   <Button icon={<UploadOutlined />}>Upload Material</Button>
                                 </Upload>
@@ -454,6 +506,7 @@ export default function AddCourse() {
                                   beforeUpload={() => false}
                                   maxCount={1}
                                   onChange={(info) => field.onChange(info.fileList)}
+                                  fileList={field.value}
                                 >
                                   <Button icon={<UploadOutlined />}>Upload Video</Button>
                                 </Upload>
@@ -489,10 +542,9 @@ export default function AddCourse() {
                     fontWeight: 500,
                   }}
                 >
-                  Upload Course
+                  Add Course
                 </Button>
               </div>
-            </form>
           </Form>
         </Card>
       </div>

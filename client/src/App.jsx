@@ -97,7 +97,7 @@ export default function App() {
           <Route index element={<TutorCourse />} />
           <Route path="courses" element={<TutorCourse />} />
           <Route path="add-course" element={<AddCourse />} />
-          <Route path="manage-lessons" element={<ManageLessons />} />
+          <Route path="manage-lessons/:courseId" element={<ManageLessons />} />
           <Route path="enrollments" element={<ViewEnrollments />} />
           <Route path="profile" element={<TutorProfile />} />
           <Route path="settings" element={<TutorSettings />} />

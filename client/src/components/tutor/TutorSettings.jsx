@@ -14,7 +14,7 @@ const { Title, Text } = Typography;
 export default function TutorSettings() {
   const [darkTheme, setDarkTheme] = useState(localStorage.getItem("theme") === "dark");
   const [form] = Form.useForm();
-  const API_BASE = "http://localhost:8000";
+  const API_BASE = "http://127.0.0.1:8000";
 
   const handleThemeChange = (checked) => {
     setDarkTheme(checked);

@@ -77,8 +77,13 @@ export default function TutorCourse() {
     fetchProfile();
   }, []);
 
-  const handleManageCourse = (courseId) => {
-    navigate(`/tutor/course/${courseId}`);
+  const handleManageCourse = (course) => {
+    const id = course.id || course.course_id || course.pk;
+    if (!id) {
+      message.error("Course ID not found. Please check backend data.");
+      return;
+    }
+    navigate(`/tutor/manage-lessons/${id}`);
   };
 
   const getThumbnailUrl = (course) => {
@@ -152,12 +157,13 @@ export default function TutorCourse() {
           margin: "0 auto 24px auto",
         }}
       >
-        <Title
+       <Title
           level={2}
           style={{
-            marginBottom: 8,
-            color: "#1a1a1a",
-            fontWeight: 600,
+            margin: 0,
+          
+            fontWeight: 700,
+            letterSpacing: "-0.5px",
           }}
         >
           My Courses
@@ -187,8 +193,10 @@ export default function TutorCourse() {
         </div>
       ) : (
         <Row gutter={[16, 16]} style={{ maxWidth: 1400, margin: "0 auto" }}>
-          {courses.map((course) => (
-            <Col xs={24} sm={12} md={8} lg={6} xl={6} key={course.id}>
+          {courses.map((course, index) => {
+            const courseKey = course.id || course.course_id || course.pk || `course-${index}`;
+            return (
+            <Col xs={24} sm={12} md={8} lg={6} xl={6} key={courseKey}>
               <Card
                 hoverable
                 style={{
@@ -265,13 +273,14 @@ export default function TutorCourse() {
                     fontWeight: 500,
                     fontSize: 11,
                   }}
-                  onClick={() => handleManageCourse(course.id)}
+                  onClick={() => handleManageCourse(course)}
                 >
                   Manage
                 </Button>
               </Card>
             </Col>
-          ))}
+            );
+          })}
 
           {courses.length === 0 && (
             <Col span={24}>

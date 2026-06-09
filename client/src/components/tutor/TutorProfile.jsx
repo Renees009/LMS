@@ -19,7 +19,7 @@ const { Title } = Typography;
 export default function TutorProfile() {
   const [profileImage, setProfileImage] = useState(null);
   const selectedFileRef = useRef(null);
-  const API_BASE = "http://localhost:8000";
+  const API_BASE = "http://127.0.0.1:8000";
   const [userName, setUserName] = useState("");
 
   const [form] = Form.useForm();
@@ -30,7 +30,6 @@ export default function TutorProfile() {
 
     selectedFileRef.current = file;
 
-    // Immediate preview
     setProfileImage(URL.createObjectURL(file));
 
     try {
