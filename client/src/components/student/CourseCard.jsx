@@ -416,9 +416,23 @@ const handleContinueLearning = () => {
           onClose={() => setShowCertificate(false)}
           course={course}
           user={userData}
-          progressPercentage={progressMeta?.progress_percentage || 100}
-          quizScore={enrollmentMeta?.highest_quiz_score}
-          quizGrade={enrollmentMeta?.highest_quiz_grade}
+          // Ensure that if progress is 0, it's passed as 0, not 100 (which happens with `||` operator)
+          progressPercentage={progressMeta?.progress_percentage ?? 100} 
+          quizScore={
+            enrollmentMeta?.highest_quiz_score ?? 
+            course?.highest_quiz_score ?? 
+            enrollmentMeta?.highest_score ??
+            enrollmentMeta?.recent_quiz_score ?? 
+            completionMeta?.recent_quiz_score ?? 
+            course?.recent_quiz_score
+          }
+          quizGrade={
+            enrollmentMeta?.recent_quiz_grade ?? 
+            completionMeta?.recent_quiz_grade ?? 
+            enrollmentMeta?.highest_quiz_grade ?? 
+            course?.recent_quiz_grade ?? 
+            course?.highest_quiz_grade
+          }
         />
       )}
     </>

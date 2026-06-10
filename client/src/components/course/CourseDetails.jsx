@@ -692,7 +692,7 @@ export default function CourseDetails() {
             {enrollmentStatus !== "enrolled" && (
               <Alert
                 message="Preview Available"
-                description="You can view lesson content and materials, but you need to enroll to get certification."
+                description="You can view lesson description , but you need to enroll to get access for course content and  certification."
                 type="info"
                 showIcon
                 style={{ marginBottom: 20, borderRadius: 12 }}

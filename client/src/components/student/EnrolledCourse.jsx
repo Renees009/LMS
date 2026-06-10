@@ -118,11 +118,15 @@ export default function EnrolledCourse() {
                       status: enrollment.status,
                       enrolled_at: enrollment.enrolled_at,
                       course_id: enrollment.course?.id || enrollment.course,
-                      highest_quiz_score: enrollment.highest_quiz_score,
-                      highest_quiz_grade: enrollment.highest_quiz_grade,
+                      highest_quiz_score: enrollment.highest_quiz_score ?? enrollment.highest_score,
+                      highest_quiz_grade: enrollment.highest_quiz_grade ?? enrollment.highest_grade,
+                      recent_quiz_score: enrollment.recent_quiz_score ?? enrollment.recent_score,
+                      recent_quiz_grade: enrollment.recent_quiz_grade ?? enrollment.recent_grade,
+                      progress: enrollment.progress,
                     }}
                     progressMeta={{
                       progress_percentage: enrollment.progress ?? 0,
+                      progress_percentage: enrollment.progress ?? enrollment.progress_percentage ?? 0,
                     }}
                   />
                 </Col>

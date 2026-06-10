@@ -14,6 +14,7 @@ import {
   Badge,
   Avatar,
   Tooltip,
+  Pagination,
 } from "antd";
 import {
   SearchOutlined,
@@ -35,6 +36,9 @@ export default function ExploreCourse() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
 
   const [searchText, setSearchText] = useState("");
   const [query, setQuery] = useState("");
@@ -124,6 +128,10 @@ export default function ExploreCourse() {
     });
   }, [courses, query, categoryFilter, levelFilter]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, categoryFilter, levelFilter]);
+
   const handleSearch = () => {
     setQuery(searchText);
   };
@@ -134,6 +142,11 @@ export default function ExploreCourse() {
     setCategoryFilter("");
     setLevelFilter("");
   };
+
+  const paginatedCourses = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filtered.slice(startIndex, startIndex + pageSize);
+  }, [filtered, currentPage]);
 
   const activeFiltersCount = [query, categoryFilter, levelFilter].filter(Boolean).length;
 
@@ -370,7 +383,7 @@ export default function ExploreCourse() {
 
           </div>
           <Row gutter={[16, 16]}>
-            {filtered.map((course) => (
+            {paginatedCourses.map((course) => (
               <Col xs={24} sm={12} md={12} lg={8} xl={6} key={course.id}>
                 <CourseCard course={course} />
               </Col>
@@ -399,6 +412,20 @@ export default function ExploreCourse() {
               </Col>
             )}
           </Row>
+
+          {filtered.length > 0 && (
+            <div style={{ marginTop: 32, display: "flex", justifyContent: "center" }}>
+              <Pagination
+                current={currentPage}
+                pageSize={pageSize}
+                total={filtered.length}
+                onChange={(page) => setCurrentPage(page)}
+                showSizeChanger={false}
+                hideOnSinglePage={false}
+                style={{ marginBottom: 24 }}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

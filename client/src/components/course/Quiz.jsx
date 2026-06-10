@@ -160,6 +160,12 @@ export default function QuizPage() {
     });
 
     setSubmitted(true);
+
+    // Automatically exit fullscreen mode once the quiz is completed
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(err => console.error("Error exiting fullscreen:", err));
+    }
+
     await submitQuizResult(payloadAnswers);
   };
 
@@ -235,6 +241,10 @@ export default function QuizPage() {
   };
 
   const handleBackToCourse = () => {
+    // Ensure fullscreen mode is exited when navigating back
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(err => console.error("Error exiting fullscreen:", err));
+    }
     navigate(`/student/course/${courseId}`);
   };
 

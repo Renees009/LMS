@@ -79,6 +79,7 @@ const CertificateGenerator = ({ visible, onClose, course, user, progressPercenta
       loadStudentName();
     }
   }, [visible, user, course]);
+  console.log("CertificateGenerator received quizScore:", quizScore, "quizGrade:", quizGrade, "progressPercentage:", progressPercentage);
 
   const generatePDF = async () => {
     if (!certificateRef.current) return;
@@ -346,24 +347,27 @@ const CertificateGenerator = ({ visible, onClose, course, user, progressPercenta
               <span style={{ color: "#ffd700", fontWeight: "bold" }}>
                 {getCourseLevel()}
               </span>{" "}
-              level with a score of{" "}
+              level with a Highest Score of{" "}
               <span style={{ color: "#ffd700", fontWeight: "bold" }}>
                 {quizScore !== null && quizScore !== undefined ? `${quizScore}%` : `${progressPercentage}%`}
               </span>{" "}
+              {quizGrade && (
+                <>
+                  {" "} and a Grade of{" "}
+                  <span style={{ color: "#ffd700", fontWeight: "bold" }}>
+                    {quizGrade}
+                  </span>
+                </>
+              )}
               on{" "}
               <span style={{ color: "#ffd700", fontWeight: "bold" }}>
                 {getCompletionDate()}
               </span>
+              
+                
+             
             </p>
           </div>
-
-          {quizGrade && (
-            <div style={{ marginTop: 8 }}>
-              <p style={{ fontSize: 14, color: "#ffd700", fontWeight: "600", margin: 0 }}>
-                Grade: {quizGrade}
-              </p>
-            </div>
-          )}
 
           <div
             style={{

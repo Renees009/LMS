@@ -118,6 +118,8 @@ export default function CompletedCourse() {
                     completionMeta={{
                       completed_date: completion.completed_date,
                       tutor_details: completion.tutor_details,
+                      recent_quiz_grade: completion.recent_quiz_grade ?? completion.enrollment?.recent_quiz_grade ?? completion.recent_grade ?? completion.enrollment?.recent_grade,
+                      recent_quiz_score: completion.recent_quiz_score ?? completion.enrollment?.recent_quiz_score ?? completion.recent_score ?? completion.enrollment?.recent_score,
                     }}
                     isCompleted={true}
                   />
