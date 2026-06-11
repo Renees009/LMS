@@ -277,12 +277,6 @@ const handleContinueLearning = () => {
             {displayTitle}
           </Text>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-            <UserOutlined style={{ color: "#0369a1", fontSize: 10 }} />
-            <Text style={{ color: "#0369a1", fontSize: 10, fontWeight: 500 }}>
-              {enrollmentCount} Enrolled
-            </Text>
-          </div>
           <Space wrap size={4}>
             {resolvedCategory && (
               <Tag color="blue" style={{ margin: 0, fontSize: 9, padding: "0 5px", lineHeight: "18px", borderRadius: 4 }}>
@@ -416,7 +410,7 @@ const handleContinueLearning = () => {
           onClose={() => setShowCertificate(false)}
           course={course}
           user={userData}
-          // Ensure that if progress is 0, it's passed as 0, not 100 (which happens with `||` operator)
+         
           progressPercentage={progressMeta?.progress_percentage ?? 100} 
           quizScore={
             enrollmentMeta?.highest_quiz_score ?? 

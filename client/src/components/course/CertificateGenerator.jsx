@@ -347,7 +347,7 @@ const CertificateGenerator = ({ visible, onClose, course, user, progressPercenta
               <span style={{ color: "#ffd700", fontWeight: "bold" }}>
                 {getCourseLevel()}
               </span>{" "}
-              level with a Highest Score of{" "}
+              level with a Score of{" "}
               <span style={{ color: "#ffd700", fontWeight: "bold" }}>
                 {quizScore !== null && quizScore !== undefined ? `${quizScore}%` : `${progressPercentage}%`}
               </span>{" "}

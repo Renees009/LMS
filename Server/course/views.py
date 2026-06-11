@@ -66,7 +66,6 @@ class CourseCreateView(APIView):
         except Exception:
             raise ValidationError({"number_of_lessons": "must be an integer"})
 
-        # Use truthiness checks to ensure fields are neither None nor empty strings
         if not title or not category or not duration or not level or not description:
             raise ValidationError({"detail": "Missing required course fields"})
 
@@ -221,13 +220,9 @@ class LessonCompletionCreateView(APIView):
             ).first()
 
             if enrollment:
-                if hasattr(enrollment, 'progress'):
-                    try:
-                        enrollment.progress = round(new_progress)
-                        enrollment.save(update_fields=["progress"])
-                    except Exception as e:
-                        logger.warning(f"Database error saving progress: {e}")
-            
+                enrollment.progress = round(new_progress)
+                enrollment.save(update_fields=["progress"])
+
             next_lesson = Lesson.objects.filter(
                 course_id=lesson.course_id,
                 order__gt=lesson.order or 0
@@ -289,12 +284,9 @@ class CourseProgressView(APIView):
         ).first()
         
         if enrollment:
-            try:
-                if hasattr(enrollment, 'progress') and enrollment.progress != round(progress_percentage):
-                    enrollment.progress = round(progress_percentage)
-                    enrollment.save(update_fields=["progress"])
-            except Exception as e:
-                logger.exception("Syncing progress to enrollment failed")
+            if enrollment.progress != round(progress_percentage):
+                enrollment.progress = round(progress_percentage)
+                enrollment.save(update_fields=["progress"])
 
         next_lesson = (
             lessons_qs.exclude(id__in=completed_lesson_ids)
@@ -569,7 +561,6 @@ class CourseCommentListCreateView(APIView):
             comment=comment,
         )
 
-        # Create a notification for the tutor if possible
         tutor_course = TutorCourse.objects.filter(course=course).first()
         if tutor_course and tutor_course.tutor_profile:
             tutor_user = tutor_course.tutor_profile.user

@@ -70,7 +70,7 @@ class StudentCourseEnrollmentSerializer(serializers.ModelSerializer):
     course_level = serializers.CharField(source="course.level", read_only=True)
     course_description = serializers.CharField(source="course.description", read_only=True)
     enrollment_count = serializers.SerializerMethodField()
-    progress = serializers.SerializerMethodField()
+    progress = serializers.IntegerField(read_only=True)
     completed_lessons = serializers.SerializerMethodField()
     total_lessons = serializers.SerializerMethodField()
 
@@ -91,13 +91,6 @@ class StudentCourseEnrollmentSerializer(serializers.ModelSerializer):
             return 0
         except Exception:
             return 0
-
-    def get_progress(self, obj):
-        total = self.get_total_lessons(obj)
-        if total == 0:
-            return 0
-        completed = self.get_completed_lessons(obj)
-        return round((completed / total) * 100)
 
     class Meta:
         model = StudentCourseEnrollment
