@@ -304,27 +304,7 @@ const handleContinueLearning = () => {
             </Text>
           )}
 
-          {progressMeta?.progress_percentage !== undefined && isEnrolled && (
-            <div style={{ marginTop: 2 }}>
-              <Text style={{ fontSize: 9, color: "#666" }}>
-                Progress: {progressMeta.progress_percentage}%
-              </Text>
-              <div style={{
-                height: 2,
-                background: "#e5e7eb",
-                borderRadius: 2,
-                marginTop: 2,
-                overflow: "hidden"
-              }}>
-                <div style={{
-                  width: `${progressMeta.progress_percentage}%`,
-                  height: "100%",
-                  background: "#1890ff",
-                  borderRadius: 2
-                }} />
-              </div>
-            </div>
-          )}
+        
 
           <div style={{ marginTop: 6 }}>
             {isCourseCompleted ? (

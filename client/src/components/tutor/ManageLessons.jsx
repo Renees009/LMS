@@ -25,7 +25,6 @@ import {
   EditOutlined,
   DeleteOutlined,
   BookOutlined,
-  QuestionCircleOutlined,
   InfoCircleOutlined,
 } from "@ant-design/icons";
 
@@ -40,7 +39,6 @@ export default function ManageLessons() {
   const [loading, setLoading] = useState(true);
   const [course, setCourse] = useState(null);
   const [lessons, setLessons] = useState([]);
-  const [quiz, setQuiz] = useState(null);
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
@@ -48,7 +46,6 @@ export default function ManageLessons() {
   const [editingLesson, setEditingLesson] = useState(null);
   const [lessonForm] = Form.useForm();
   const [courseForm] = Form.useForm();
-  const [quizForm] = Form.useForm();
 
   const fetchAllData = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -67,16 +64,6 @@ export default function ManageLessons() {
       if (lessonsRes.ok) {
         const data = await lessonsRes.json();
         setLessons(Array.isArray(data) ? data : data.results || []);
-      }
-
-      const quizRes = await fetch(`${API_BASE}/api/course/${courseId}/quiz/`, { headers });
-      if (quizRes.ok) {
-        const quizData = await quizRes.json();
-        setQuiz(quizData);
-        quizForm.setFieldsValue(quizData);
-      } else {
-        setQuiz(null);
-        quizForm.resetFields(); 
       }
     } catch (error) {
       console.error("Error fetching course data:", error);
@@ -196,28 +183,6 @@ export default function ManageLessons() {
         }
       },
     });
-  };
-
-  const handleSaveQuiz = async (values) => {
-    try {
-      setSaving(true);
-      const res = await fetch(`${API_BASE}/api/tutor/courses/${courseId}/quiz/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("lms_token")}`,
-        },
-        body: JSON.stringify(values),
-      });
-      if (res.ok) {
-        message.success("Quiz updated successfully");
-        fetchAllData(true);
-      }
-    } catch (error) {
-      message.error("Failed to save quiz");
-    } finally {
-      setSaving(false);
-    }
   };
 
   if (loading) return <div style={{ textAlign: "center", padding: "100px" }}><Spin size="large" /></div>;
@@ -346,84 +311,6 @@ export default function ManageLessons() {
               )}
             />
         </>
-      ),
-    },
-    {
-      key: "3",
-      label: (
-        <span>
-          <QuestionCircleOutlined /> Quiz
-        </span>
-      ),
-      children: (
-        <Card bordered={false}>
-              <Form
-                form={quizForm}
-                layout="vertical"
-                onFinish={handleSaveQuiz}
-              >
-                <Form.Item name="title" label="Quiz Title" rules={[{ required: true }]}>
-                  <Input placeholder="Final Assessment" />
-                </Form.Item>
-                
-                <Form.List name="questions">
-                  {(fields, { add, remove }) => (
-                    <>
-                      {fields.map(({ key, name, ...restField }) => (
-                        <Card
-                          key={key}
-                          size="small"
-                          title={`Question ${name + 1}`}
-                          extra={<DeleteOutlined onClick={() => remove(name)} />}
-                          style={{ marginBottom: 16, background: "#fafafa" }}
-                        >
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'question']}
-                            rules={[{ required: true, message: 'Missing question' }]}
-                          >
-                            <Input placeholder="Enter Question Text" />
-                          </Form.Item>
-                          <Space direction="vertical" style={{ width: '100%' }}>
-                            <Form.Item 
-                              {...restField} 
-                              name={[name, 'option_a']} 
-                              rules={[{ required: true, message: 'Option A is required' }]} 
-                              label="Option A"
-                            >
-                              <Input />
-                            </Form.Item>
-                            <Form.Item {...restField} name={[name, 'option_b']} rules={[{ required: true }]} label="Option B">
-                              <Input />
-                            </Form.Item>
-                            <Form.Item {...restField} name={[name, 'option_c']} rules={[{ required: true }]} label="Option C">
-                              <Input />
-                            </Form.Item>
-                            <Form.Item {...restField} name={[name, 'option_d']} rules={[{ required: true }]} label="Option D">
-                              <Input />
-                            </Form.Item>
-                            <Form.Item {...restField} name={[name, 'correct_option']} label="Correct Answer" rules={[{ required: true }]}>
-                              <Select>
-                                <Select.Option value="A">Option A</Select.Option>
-                                <Select.Option value="B">Option B</Select.Option>
-                                <Select.Option value="C">Option C</Select.Option>
-                                <Select.Option value="D">Option D</Select.Option>
-                              </Select>
-                            </Form.Item>
-                          </Space>
-                        </Card>
-                      ))}
-                      <Form.Item>
-                        <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                          Add Question
-                        </Button>
-                      </Form.Item>
-                    </>
-                  )}
-                </Form.List>
-                <Button type="primary" htmlType="submit" loading={saving}>Save Quiz</Button>
-              </Form>
-            </Card>
       ),
     },
   ];

@@ -347,18 +347,7 @@ const CertificateGenerator = ({ visible, onClose, course, user, progressPercenta
               <span style={{ color: "#ffd700", fontWeight: "bold" }}>
                 {getCourseLevel()}
               </span>{" "}
-              level with a Score of{" "}
-              <span style={{ color: "#ffd700", fontWeight: "bold" }}>
-                {quizScore !== null && quizScore !== undefined ? `${quizScore}%` : `${progressPercentage}%`}
-              </span>{" "}
-              {quizGrade && (
-                <>
-                  {" "} and a Grade of{" "}
-                  <span style={{ color: "#ffd700", fontWeight: "bold" }}>
-                    {quizGrade}
-                  </span>
-                </>
-              )}
+              
               on{" "}
               <span style={{ color: "#ffd700", fontWeight: "bold" }}>
                 {getCompletionDate()}

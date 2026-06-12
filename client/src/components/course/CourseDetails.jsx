@@ -6,7 +6,6 @@ import {
   Col,
   Typography,
   Button,
-  Progress,
   Tag,
   Space,
   Collapse,
@@ -359,6 +358,14 @@ export default function CourseDetails() {
 
     if (completedLessons.includes(Number(lessonId))) return;
 
+    // Calculate UI's current progress before sending the request
+    const currentCompletedLessons = [...completedLessons, Number(lessonId)];
+    const updatedListForCalc = Array.from(new Set(currentCompletedLessons));
+    const totalLessonsCountForCalc = lessons.length || (course?.lessons?.length) || 0;
+    const uiCalculatedProgress = totalLessonsCountForCalc > 0 
+      ? Math.round((updatedListForCalc.length / totalLessonsCountForCalc) * 100) 
+      : 0;
+
     try {
       const token = localStorage.getItem("lms_token");
       if (!token) {
@@ -377,6 +384,7 @@ export default function CourseDetails() {
           course: parseInt(courseId),
           lesson_id: Number(lessonId),
           course_id: Number(courseId),
+          progress_percentage: uiCalculatedProgress, // Sending UI's calculated progress
         }),
       });
 
@@ -493,7 +501,7 @@ export default function CourseDetails() {
             color: "white",
           }}>
             <Row gutter={[24, 24]}>
-              <Col xs={24} lg={16}>
+              <Col xs={24} lg={24}>
                 <Row gutter={[24, 24]}>
                   <Col xs={24} md={8}>
                     <img
@@ -624,43 +632,6 @@ export default function CourseDetails() {
                   </Col>
                 </Row>
               </Col>
-
-              {enrollmentStatus === "enrolled" && (
-                <Col xs={24} lg={8}>
-                  <div style={{ 
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "100%",
-                  }}>
-                    <Tooltip title={getTrackProgressMessage()}>
-                      <Progress 
-                        type="circle"
-                        percent={progress} 
-                        strokeColor={{
-                          '0%': '#ffd700',
-                          '100%': '#52c41a',
-                        }}
-                        trailColor="rgba(255,255,255,0.15)"
-                        strokeWidth={8}
-                        width={140}
-                        format={(percent) => (
-                          <div style={{ color: "white" }}>
-                            <div style={{ fontSize: 26, fontWeight: "bold" }}>{percent}%</div>
-                            <div style={{ fontSize: 10, opacity: 0.8, letterSpacing: 1 }}>COMPLETE</div>
-                          </div>
-                        )}
-                      />
-                    </Tooltip>
-                    <div style={{ marginTop: 16, textAlign: "center" }}>
-                      <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 14, fontWeight: 500 }}>
-                        {completedLessons.length} / {lessons.length} Lessons Finished
-                      </Text>
-                    </div>
-                  </div>
-                </Col>
-              )}
             </Row>
           </div>
         </Card>
