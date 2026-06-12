@@ -2,7 +2,7 @@
 
 A full-stack Learning Management System (LMS) designed to facilitate online education. This platform supports two primary user roles: **Tutors**, who can create and manage courses, and **Students**, who can enroll in courses, track their progress, and take quizzes.
 
-## 🚀 Features
+##  Features
 
 ### For Students
 *   **Course Exploration:** Browse and view details of available courses.
@@ -17,7 +17,7 @@ A full-stack Learning Management System (LMS) designed to facilitate online educ
 *   **Profile Creation:** Create, Delete, Update Tutor and Student Profiles.
 *   **Course , Lesson , Quiz management:** Create, Delete, Update course, lesson, and quiz details.
 
-## 🛠️ Technology Stack
+##  Technology Stack
 
 ### Backend (Server)
 *   **Framework:** Django & Django REST Framework (DRF)
@@ -32,7 +32,7 @@ A full-stack Learning Management System (LMS) designed to facilitate online educ
 *   **Routing:** React Router DOM
 *   **Icons:** Ant Design Icons
 
-## 📦 Installation & Setup
+##  Installation & Setup
 
 ### Prerequisites
 *   Python 3.8+
