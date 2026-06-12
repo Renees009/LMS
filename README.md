@@ -7,7 +7,6 @@ A full-stack Learning Management System (LMS) designed to facilitate online educ
 ### For Students
 *   **Course Exploration:** Browse and view details of available courses.
 *   **Enrollment System:**  enroll in courses to access restricted content.
-*   **Progress Tracking:** progress percentage updates as lessons are marked complete.
 *   **Quiz System:** Attempt quizzes upon completing 80% of a course, with automated grading and re-attempt .
 
 ### For Tutors
