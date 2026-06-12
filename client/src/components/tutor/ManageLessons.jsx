@@ -22,8 +22,6 @@ import {
 import {
   UploadOutlined,
   PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
   BookOutlined,
   InfoCircleOutlined,
 } from "@ant-design/icons";
@@ -169,22 +167,6 @@ export default function ManageLessons() {
     }
   };
 
-  const handleDeleteLesson = async (lessonId) => {
-    Modal.confirm({
-      title: "Are you sure you want to delete this lesson?",
-      onOk: async () => {
-        const res = await fetch(`${API_BASE}/api/tutor/courses/${courseId}/lessons/${lessonId}/`, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${localStorage.getItem("lms_token")}` },
-        });
-        if (res.ok) {
-          message.success("Lesson deleted");
-          fetchAllData();
-        }
-      },
-    });
-  };
-
   if (loading) return <div style={{ textAlign: "center", padding: "100px" }}><Spin size="large" /></div>;
 
   const tabItems = [
@@ -279,21 +261,6 @@ export default function ManageLessons() {
               renderItem={(item, index) => (
                 <List.Item
                   key={item.id || index}
-                  actions={[
-                    <Button
-                      icon={<EditOutlined />}
-                      onClick={() => {
-                        setEditingLesson(item);
-                        lessonForm.setFieldsValue(item);
-                        setIsLessonModalVisible(true);
-                      }}
-                    />,
-                    <Button
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => handleDeleteLesson(item.id)}
-                    />,
-                  ]}
                 >
                   <List.Item.Meta
                     title={<Text strong>Lesson {item.order || index + 1}: {item.title}</Text>}
